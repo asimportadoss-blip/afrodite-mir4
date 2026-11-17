@@ -59,10 +59,18 @@ body{background:radial-gradient(ellipse at 50% -12%,#7a3b0d66,transparent 42%),r
 .gold-card.featured{border:2px solid #efbd59;box-shadow:0 0 0 3px #d88c2630,0 18px 48px #000a}
 .gold-card h3{font-family:Georgia,serif;font-size:23px;color:#ffe0a0;margin:10px 0}.gold-card p{min-height:44px;color:#c7b69d;font-size:13px}.gold-card .price{font-size:27px;color:#ffd477;font-weight:900;margin:15px 0}.gold-card .btn{width:100%}.gold-card .tag{color:#e9b85d;font-size:10px;letter-spacing:2px}
 .ribbon{position:absolute;top:13px;right:-35px;transform:rotate(35deg);background:linear-gradient(90deg,#b84b14,#ffd16b);color:#1a0d04;font-size:9px;font-weight:900;padding:5px 38px}
-.gold-chest{width:128px;height:94px;position:relative;margin:24px auto 22px;filter:drop-shadow(0 12px 12px #000)}
-.gold-chest:before{content:"";position:absolute;left:9px;top:0;width:110px;height:42px;border:4px solid #f4ca69;border-radius:55px 55px 9px 9px;background:linear-gradient(145deg,#f5c45b,#87400e)}
-.gold-chest:after{content:"";position:absolute;left:5px;top:35px;width:118px;height:56px;border:4px solid #e9b64f;border-radius:9px 9px 15px 15px;background:repeating-linear-gradient(90deg,#6d300b 0 17px,#a95c17 18px 22px,#4b2109 23px 29px);box-shadow:inset 0 0 0 4px #713b0d,0 0 22px #f1b84755}
-.gold-chest span{position:absolute;z-index:2;left:54px;top:43px;color:#fff0a8;font-size:27px;text-shadow:0 0 12px #fff,0 0 20px #ffc64e}
+/* Baú 3D: perspectiva, tampa facetada, travessas metálicas e brilho interno */
+.gold-card{transform:translateZ(0);transition:transform .28s ease,border-color .28s ease,box-shadow .28s ease}
+.gold-card:hover{transform:translateY(-8px);border-color:#ffd778;box-shadow:0 24px 55px #000c,0 0 32px #d9953244,inset 0 0 35px #d18a2530}
+.gold-chest{width:156px;height:132px;position:relative;margin:17px auto 18px;perspective:700px;filter:drop-shadow(0 18px 12px #000b);isolation:isolate}
+.gold-chest:before{content:"";position:absolute;z-index:2;left:13px;top:8px;width:130px;height:57px;border:3px solid #f7d77e;border-radius:18px 18px 7px 7px;transform:rotateX(27deg) skewY(-2deg);transform-origin:bottom;background:linear-gradient(145deg,#ffe8a0 0%,#c77b20 23%,#713509 52%,#e4a43d 76%,#542406 100%);box-shadow:inset 0 5px 9px #fff7b5,inset 0 -8px 12px #321300,0 0 18px #f8c75b66}
+.gold-chest:after{content:"";position:absolute;z-index:1;left:9px;top:53px;width:138px;height:68px;border:3px solid #f1c45e;border-radius:7px 7px 17px 17px;background:linear-gradient(90deg,#4b2008 0 9%,#c27a22 10% 17%,#71370c 18% 38%,#d99836 39% 47%,#632c08 48% 72%,#c47b20 73% 81%,#4b2008 82%),linear-gradient(180deg,#f4c768,#6c320b);box-shadow:inset 0 7px 10px #ffe7a055,inset 0 -12px 14px #1b0b02,0 8px 0 #321303,0 0 22px #f1b84766}
+.gold-chest span{position:absolute;z-index:4;left:65px;top:58px;width:28px;height:34px;display:grid;place-items:center;border:2px solid #fff0a8;border-radius:5px;background:linear-gradient(145deg,#ffe7a0,#a85b12);color:#fff5c7;font-size:22px;text-shadow:0 0 10px #fff,0 0 20px #ffc64e;box-shadow:0 0 15px #ffd36b}
+.gold-chest:focus{outline:2px solid #ffd778}
+.gold-card.featured .gold-chest{transform:scale(1.13);margin-top:22px;margin-bottom:23px}
+.gold-card:before{content:"";position:absolute;pointer-events:none;inset:0;background:radial-gradient(ellipse at 50% 38%,#f6bd4a16,transparent 48%);opacity:.9}
+.gold-card .tag{position:relative;z-index:2}
+@media(max-width:700px){.gold-grid{grid-template-columns:1fr}.gold-chest{transform:scale(.96)}}
 .chat-float{position:fixed;z-index:30;right:24px;bottom:24px;width:66px;height:66px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#f7d47a,#bd651d);border:2px solid #ffe3a0;box-shadow:0 8px 28px #000b,0 0 25px #e5a23d66;color:#1b0c03;text-decoration:none;font-size:31px}
 .chat-float:after{content:"Atendimento";position:absolute;right:76px;white-space:nowrap;background:#160f08;border:1px solid #9d6b2b;border-radius:20px;padding:7px 12px;color:#f5d18a;font-size:12px;font-weight:800}
 @media(max-width:900px){.gold-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.gold-grid{grid-template-columns:1fr}.chat-float{right:15px;bottom:15px;width:60px;height:60px}.chat-float:after{display:none}}
@@ -85,7 +93,7 @@ body{background:radial-gradient(ellipse at 50% -12%,#7a3b0d66,transparent 42%),r
 <div class="gold-grid">
 <article class="gold-card featured"><div class="ribbon">OFERTA ESPECIAL</div><div class="gold-chest"><span>✦</span></div><span class="tag">MAIS VANTAJOSO</span><h3>5.000 Ouro</h3><p>Promoção: cada 1.000 por R$ 19,00.</p><div class="price">R$ 95,00</div><button class="btn" onclick="addCart('5.000 Ouro',95)">Comprar 5K</button></article>
 <article class="gold-card"><div class="gold-chest"><span>✦</span></div><span class="tag">PACOTE MAIOR</span><h3>10.000 Ouro</h3><p>Preço promocional de R$ 19 por mil.</p><div class="price">R$ 190,00</div><button class="btn" onclick="addCart('10.000 Ouro',190)">Comprar 10K</button></article>
-<article class="gold-card"><div class="gold-chest"><span>✦</span></div><span class="tag">PACOTE TRADICIONAL</span><h3>1.053 Ouro</h3><p>Pacote tradicional da Afrodite.</p><div class="price">R$ 20,00</div><button class="btn" onclick="addCart('1.053 Ouro',20)">Comprar pacote</button></article>
+
 </div></section>
 <section class="wrap section" id="venda"><div class="two"><div class="info-card buyback"><div class="eyebrow">Negociação</div><h3>Você também tem ouro para vender?</h3><p>A Afrodite compra 1.053 de ouro por R$ 16,00. Envie uma solicitação pelo atendimento do site para receber as orientações. A negociação depende de conferência e disponibilidade.</p><a class="btn" href="#atendimento" style="display:inline-block;text-decoration:none">Falar pelo site</a></div><div class="info-card"><div class="eyebrow">Como funciona</div><h3>Simples e transparente</h3><p>1. Escolha o pacote e adicione à sacola.<br>2. Informe os dados do pedido.<br>3. Faça o Pix usando a chave exibida.<br>4. Aguarde a conferência do pagamento e as instruções de entrega.</p></div></div></section>
 <section class="wrap section" id="atendimento"><div class="section-head"><div><div class="eyebrow">Central Afrodite</div><h2>Atendimento pelo site</h2><p class="sub">Use este espaço para registrar sua dúvida ou enviar uma imagem do item.</p></div></div>
