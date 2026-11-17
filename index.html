@@ -162,8 +162,8 @@ function initFirebase(){
  try{
   if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
   firebaseDb=firebase.database();firebaseEnabled=true;
-  firebaseDb.ref('afrodite/orders').on('value',snap=>{const value=snap.val();if(Array.isArray(value)){localStorage.setItem(DB_KEY,JSON.stringify(value));if(adminOpen)renderAdmin()}});
-  firebaseDb.ref('afrodite/chat').on('value',snap=>{const value=snap.val();if(Array.isArray(value)){localStorage.setItem(CHAT_KEY,JSON.stringify(value));renderChat();renderAdminChat()}});
+  firebaseDb.ref('afrodite/orders').on('value',snap=>{const value=snap.val();if(value){const rows=Array.isArray(value)?value:Object.values(value);localStorage.setItem(DB_KEY,JSON.stringify(rows));if(adminOpen)renderAdmin()}});
+  firebaseDb.ref('afrodite/chat').on('value',snap=>{const value=snap.val();if(value){const rows=Array.isArray(value)?value:Object.values(value);localStorage.setItem(CHAT_KEY,JSON.stringify(rows));renderChat();renderAdminChat()}});
   firebaseDb.ref('afrodite/orders').once('value').then(snap=>{if(!snap.exists()&&getOrders().length)firebaseDb.ref('afrodite/orders').set(getOrders())});
   firebaseDb.ref('afrodite/chat').once('value').then(snap=>{if(!snap.exists()&&getChat().length)firebaseDb.ref('afrodite/chat').set(getChat())});
  }catch(err){console.error('Falha ao iniciar Firebase Afrodite:',err);firebaseEnabled=false}
