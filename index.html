@@ -70,8 +70,8 @@ footer{background:#100b08;border-color:#704626;padding:35px 0 24px}.footer-trust
 </head>
 <body>
 <header class="site-header"><div class="wrap header-inner">
-<a class="brand" href="#inicio"><span class="brand-mark"><img src="/images/logo.png" alt="Logo Afrodite MIR4" onerror="this.style.display='none';this.parentElement.classList.add('logo-placeholder')"></span><span class="brand-title">AFRODITE <em>MIR<span>4</span></em><small>OURO • COMPRA • VENDA</small></span></a>
-<nav class="main-nav" aria-label="Menu principal"><a href="#inicio">⌂ <span>Início</span></a><a href="#sacola" onclick="event.preventDefault();showPage('cart')">▣ <span>Sacola</span><b id="cartCount" class="nav-count">0</b></a><a href="#faq">＋ <span>FAQ</span></a><a href="#suporte" onclick="openChat()">◉ <span>Suporte</span></a></nav>
+<a class="brand" href="#inicio" onclick="event.preventDefault();showPage('home')"><span class="brand-mark"><img src="/images/logo.png" alt="Logo Afrodite MIR4" onerror="this.style.display='none';this.parentElement.classList.add('logo-placeholder')"></span><span class="brand-title">AFRODITE <em>MIR<span>4</span></em><small>OURO • COMPRA • VENDA</small></span></a>
+<nav class="main-nav" aria-label="Menu principal"><a href="#inicio" onclick="event.preventDefault();showPage('home')">⌂ <span>Início</span></a><a href="#sacola" onclick="event.preventDefault();showPage('cart')">▣ <span>Sacola</span><b id="cartCount" class="nav-count">0</b></a><a href="#faq" onclick="event.preventDefault();showPage('home');setTimeout(()=>document.getElementById('faq').scrollIntoView({behavior:'smooth'}),50)">＋ <span>FAQ</span></a><a href="#suporte" onclick="openChat()">◉ <span>Suporte</span></a></nav>
 </div></header>
 <main>
 <section class="hero" id="inicio"><div class="hero-shade"></div><div class="wrap hero-layout">
