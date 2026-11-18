@@ -160,12 +160,28 @@ button.admin-launch{
  mask-image:radial-gradient(ellipse 68% 58% at 50% 46%, #000 58%, transparent 88%)!important;
 }
 .catalog .coin-crop-4{
- background-position:8% 100%!important;
- background-size:260% 180%!important;
+ background-position:21% 100%!important;
+ background-size:221% 153%!important;
 }
 @media(max-width:540px){
  button.chat-launch{right:24px!important;bottom:24px!important}
  button.admin-launch{left:24px!important;bottom:24px!important}
+}
+
+/* Banner lateral: preencher a altura da coluna sem faixa preta superior */
+.catalog .promo-card{
+ height:100%!important;
+ min-height:100%!important;
+ align-self:stretch!important;
+ overflow:hidden!important;
+}
+.catalog .promo-card .promo-crop{
+ position:absolute!important;
+ inset:0!important;
+ width:100%!important;
+ height:100%!important;
+ background-size:cover!important;
+ background-position:right center!important;
 }
 </style>
 </head>
