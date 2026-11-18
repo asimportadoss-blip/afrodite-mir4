@@ -498,6 +498,38 @@ button.admin-launch{
   transform-origin:0% 0%!important;
   display:block!important;
 }
+
+/* Banner lateral: imagem quadrada original, sem recortes ou zoom */
+.catalog .promo-card{
+  width:100%!important;
+  aspect-ratio:1 / 1!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border-radius:12px!important;
+}
+.catalog .promo-card .promo-crop{
+  position:relative!important;
+  inset:auto!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  aspect-ratio:1 / 1!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  background-image:none!important;
+  background-size:auto!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  transform:none!important;
+  transform-origin:center!important;
+  margin:0!important;
+  border-radius:12px!important;
+  mix-blend-mode:normal!important;
+}
+
 </style>
 </head>
 <body>
@@ -516,7 +548,7 @@ button.admin-launch{
 <article class="card"><div class="rank">PACOTE POPULAR</div><div class="coin-art"><img src="./image2.jpeg" alt="Baú do Pacote Popular — 5.265 de Ouro"></div><h3>5.265 de Ouro</h3><div class="price">R$ 95,00</div><button class="gold-btn full" onclick="addToCart('5.265 Ouro MIR4',95)">＋ Adicionar</button></article>
 <article class="card"><div class="rank">PACOTE AVANÇADO</div><div class="coin-art"><img src="./image3.jpeg" alt="Baú do Pacote Avançado — 10.530 de Ouro"></div><h3>10.530 de Ouro</h3><div class="price">R$ 190,00</div><button class="gold-btn full" onclick="addToCart('10.530 Ouro MIR4',190)">＋ Adicionar</button></article>
 <article class="card"><div class="rank">PACOTE LENDÁRIO</div><div class="coin-art"><img src="./image4.jpeg" alt="Baú do Pacote Lendário — 21.060 de Ouro"></div><h3>21.060 de Ouro</h3><div class="price">R$ 380,00</div><button class="gold-btn full" onclick="addToCart('21.060 Ouro MIR4',380)">＋ Adicionar</button></article>
-</div></div><aside class="promo-card"><div class="promo-crop" role="img" aria-label="Banner MIR4 Jogue Mais, Evolua Mais"></div></aside></div></section>
+</div></div><aside class="promo-card"><img class="promo-crop" src="./image_3a915e72.jpeg" alt="Banner MIR4 — Jogue Mais, Evolua Mais"></aside></div></section>
 <section class="faq-cart" id="faq"><div class="wrap faq-cart-grid"><div class="panel faq-panel"><div class="section-title left"><h2>Perguntas Frequentes</h2><p>Informações para comprar com tranquilidade.</p></div>
 <details><summary>Como funciona a taxa de 5%?</summary><p>A taxa de 5% é calculada sobre o valor dos pacotes e aparece discriminada no resumo antes de finalizar o pedido.</p></details>
 <details><summary>Qual o prazo de entrega?</summary><p>A entrega depende da confirmação do pagamento e da disponibilidade do item no Mercado Unificado. O atendimento informará o andamento.</p></details>
