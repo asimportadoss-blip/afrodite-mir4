@@ -92,8 +92,8 @@ footer{background:#100b08;border-color:#704626;padding:35px 0 24px}.footer-trust
 .catalog .promo-crop{position:absolute;inset:0;width:100%;height:100%;background-image:url("./image_17080d4d.jpeg");background-repeat:no-repeat;background-size:cover;background-position:right bottom;mix-blend-mode:lighten}
 
 .brand{gap:10px}
-.brand-face{width:46px;height:46px;flex:0 0 46px;border-radius:50%;overflow:hidden;border:2px solid #eab308;display:block;background:#090604}
-.brand-face img{width:100%;height:100%;object-fit:cover;object-position:50% 18%;transform:scale(2.1);transform-origin:50% 22%;display:block}
+.brand-face{width:54px;height:54px;flex:0 0 54px;border-radius:50%;overflow:hidden;border:2px solid #eab308;display:block;background:#090604}
+.brand-face img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;transform:scale(1.85);transform-origin:50% 32%;display:block}
 
 /* Correção de camadas e área clicável */
 .site-header{position:relative;z-index:20}
@@ -111,11 +111,27 @@ button,a,[role="button"],[role="link"],.admin-launch,.admin-footer,.chat-launch{
 .quote-card{cursor:pointer;pointer-events:auto;z-index:11}
 .modal{z-index:200}.cart-drawer,.drawer-backdrop{z-index:150}
 .checkout-open{display:block!important}
+
+/* Ajustes finais de marca, atendimento e recortes do catálogo */
+.brand{gap:12px}
+.brand-mark{display:none!important}
+.brand-face{width:54px!important;height:54px!important;flex:0 0 54px!important}
+.admin-launch{left:20px!important;bottom:20px!important;right:auto!important;z-index:50!important}
+.chat-launch{right:20px!important;bottom:20px!important;left:auto!important;width:64px;height:64px;display:grid;place-items:center;z-index:51!important;color:#fff!important}
+.chat-launch svg{display:block;width:30px;height:30px;pointer-events:none}
+.chat-launch i{display:none!important}
+.catalog .coin-art{display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;isolation:isolate}
+.catalog .coin-crop{display:block;flex:0 0 100%;width:100%;height:100%;min-height:0;background-repeat:no-repeat;overflow:hidden;mask-image:radial-gradient(circle,black 62%,transparent 95%);-webkit-mask-image:radial-gradient(circle,black 62%,transparent 95%);mix-blend-mode:lighten}
+.catalog .coin-crop-1{background-position:0% 0%;background-size:280% 190%}
+.catalog .coin-crop-2{background-position:50% 0%;background-size:280% 190%}
+.catalog .coin-crop-3{background-position:100% 0%;background-size:280% 190%}
+.catalog .coin-crop-4{background-position:0% 100%;background-size:260% 180%}
+@media(max-width:540px){.admin-launch{left:10px!important;bottom:10px!important}.chat-launch{right:10px!important;bottom:10px!important}}
 </style>
 </head>
 <body>
 <header class="site-header"><div class="wrap header-inner">
-<a class="brand" href="#inicio" onclick="event.preventDefault();showPage('home')"><span class="brand-face"><img src="./image_601c32e6.jpeg" alt="Rosto da personagem Afrodite"></span><span class="brand-mark"><img src="/images/logo.png" alt="Logo Afrodite MIR4" onerror="this.style.display='none';this.parentElement.classList.add('logo-placeholder')"></span><span class="brand-title">AFRODITE <em>MIR<span>4</span></em><small>OURO • COMPRA • VENDA</small></span></a>
+<a class="brand" href="#inicio" onclick="event.preventDefault();showPage('home')"><span class="brand-face"><img src="./image_601c32e6.jpeg" alt="Rosto da personagem Afrodite"></span><span class="brand-title">AFRODITE <em>MIR<span>4</span></em><small>OURO • COMPRA • VENDA</small></span></a>
 <nav class="main-nav" aria-label="Menu principal"><a href="#inicio" onclick="event.preventDefault();showPage('home')">⌂ <span>Início</span></a><a href="#sacola" onclick="event.preventDefault();showPage('cart')">▣ <span>Sacola</span><b id="cartCount" class="nav-count">0</b></a><a href="#faq" onclick="event.preventDefault();showPage('home');setTimeout(()=>document.getElementById('faq').scrollIntoView({behavior:'smooth'}),50)">＋ <span>FAQ</span></a><a href="#chat" onclick="event.preventDefault();openChat()">◉ <span>Suporte</span></a></nav>
 </div></header>
 <main>
@@ -152,7 +168,7 @@ button,a,[role="button"],[role="link"],.admin-launch,.admin-footer,.chat-launch{
   <div class="drawer-foot"><div class="basket-total"><span>Total</span><span id="drawerTotal">R$ 0,00</span></div><button class="gold-btn full" id="finishButton" onclick="startCheckout()" disabled>FINALIZAR PEDIDO</button></div>
 </aside>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<button class="admin-launch" onclick="openAdmin()">PAINEL ATENDENTE</button><button class="chat-launch" onclick="openChat()" aria-label="Abrir Chat Online">● <span>Chat Online</span><i></i></button>
+<button class="admin-launch" onclick="openAdmin()">PAINEL ATENDENTE</button><button class="chat-launch" onclick="openChat()" aria-label="Abrir Chat Online"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5Z"/></svg><span>Chat Online</span></button>
 <aside class="chat" id="chat"><div class="chat-head"><div class="avatar">AM</div><div><b>Atendente Afrodite</b><small>● Atendimento online</small></div><button class="close" onclick="closeChat()">×</button></div><div class="chat-messages" id="chatMessages"><div class="bubble">Olá! Informe sua dúvida ou pedido. Nossa equipe poderá responder por este atendimento.</div></div><div class="chat-form"><input id="chatInput" placeholder="Digite sua mensagem..." onkeydown="if(event.key==='Enter')sendChat()"><button class="gold-btn" onclick="sendChat()">ENVIAR</button></div><div class="chat-hint">Conversa Afrodite. Não envie senhas ou dados bancários.</div></aside>
 <div class="modal" id="adminModal"><div class="admin"><div style="display:flex;justify-content:space-between;align-items:center"><h2>PAINEL ATENDENTE</h2><button class="close" onclick="closeAdmin()">×</button></div><div class="admin-login" id="adminLogin"><p class="muted">Acesso restrito à equipe.</p><input type="password" id="adminPassword" placeholder="Senha do atendente"><button class="gold-btn full" onclick="loginAdmin()">ENTRAR</button><p id="adminError" style="color:#e88b78;font-size:12px"></p></div><div id="adminDashboard" style="display:none"><p class="muted">Pedidos e conversas sincronizados pelo Firebase quando as credenciais e regras de acesso estiverem configuradas.</p><div class="admin-grid"><div class="admin-box"><h3>PEDIDOS RECEBIDOS</h3><div class="order-list" id="adminOrders">Nenhum pedido enviado.</div></div><div class="admin-box"><h3>DETALHES DO PEDIDO</h3><div class="order-detail" id="orderDetail">Selecione um pedido na lista para ver os dados e o print.</div><div class="admin-chat"><h3>CHAT COM CLIENTE</h3><div class="admin-chat-messages" id="adminChatMessages"></div><div class="admin-reply"><input id="adminReply" placeholder="Responder ao cliente..." onkeydown="if(event.key==='Enter')replyChat()"><button class="gold-btn" onclick="replyChat()">ENVIAR</button></div></div></div></div></div></div></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
@@ -286,10 +302,10 @@ try{renderCart()}catch(error){console.error('Falha ao desenhar a sacola:',error)
       if(!ctx)return;
       const sw=portrait.naturalWidth,sh=portrait.naturalHeight;
       // Recorte superior central: rosto e coroa, sem incluir o corpo.
-      const cropW=Math.min(sw*0.58,sh*0.72);
-      const cropH=Math.min(sh*0.46,cropW);
+      const cropW=Math.min(sw*0.62,sh*0.78);
+      const cropH=Math.min(sh*0.56,cropW);
       const sx=(sw-cropW)/2;
-      const sy=Math.max(0,sh*0.015);
+      const sy=Math.max(0,sh*0.065);
       const side=Math.min(cropW,sh-sy,cropH);
       ctx.clearRect(0,0,64,64);
       ctx.save();
