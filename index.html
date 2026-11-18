@@ -326,6 +326,50 @@ button.admin-launch{
   overflow:hidden!important;
 }
 
+
+
+/* Ajustes finais de proporção dos baús, cotações e banner MIR4 */
+.catalog .coin-art{
+  height:175px!important;
+  min-height:175px!important;
+}
+.catalog .coin-art img{
+  transform:scale(1.25)!important;
+  mix-blend-mode:screen!important;
+}
+.quote-card{
+  padding-top:22px!important;
+}
+.quote-card .quote-chest{
+  display:block!important;
+  position:static!important;
+  width:72px!important;
+  height:60px!important;
+  object-fit:contain!important;
+  mix-blend-mode:screen!important;
+  margin:0 auto 8px auto!important;
+}
+.catalog .promo-card{
+  width:100%!important;
+  max-width:330px!important;
+  aspect-ratio:3 / 4!important;
+  height:auto!important;
+  max-height:440px!important;
+  min-height:0!important;
+  align-self:center!important;
+  margin:0 auto!important;
+  overflow:hidden!important;
+}
+.catalog .promo-card .promo-crop{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  background-size:300% 200%!important;
+  background-position:100% 100%!important;
+  background-repeat:no-repeat!important;
+}
+
 </style>
 </head>
 <body>
@@ -337,7 +381,7 @@ button.admin-launch{
 <section class="hero" id="inicio"><div class="hero-shade"></div><div class="wrap hero-layout">
 <div class="hero-character"><img src="./image_601c32e6.jpeg" alt="Personagem guerreira Afrodite"></div><div class="hero-copy"><img class="hero-logo-image" src="./imageMir4.jpeg" alt="Afrodite MIR4"><p>Seu ouro com segurança, rapidez e as melhores condições!</p>
 <div class="hero-badges"><span>♢ Compra Segura</span><span>⚡ Entrega Rápida</span><span>✦ Suporte Especializado</span></div></div>
-<div class="quote-grid"><article class="quote-card sell" role="button" tabindex="0" aria-label="Adicionar 1.053 de ouro à sacola" onclick="addToCart('1.053 Ouro MIR4',20)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();addToCart('1.053 Ouro MIR4',20)}"><span class="coin-thumb" aria-hidden="true"></span><small>VENDA DA AFRODITE</small><strong>R$ 20,00</strong><span>1.053 de ouro</span><small class="quote-action-hint">Clique para adicionar à sacola</small></article><article class="quote-card buy" role="link" tabindex="0" aria-label="Abrir Chat Online para negociar venda de ouro" onclick="openChat('Olá! Tenho interesse em vender ouro para a Afrodite MIR4.')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openChat('Olá! Tenho interesse em vender ouro para a Afrodite MIR4.')}"><span class="coin-thumb" aria-hidden="true"></span><small>COMPRA DA AFRODITE</small><strong>R$ 16,00</strong><span>1.053 de ouro</span><small class="quote-action-hint">Clique para negociar sua venda</small></article></div>
+<div class="quote-grid"><article class="quote-card sell" role="button" tabindex="0" aria-label="Adicionar 1.053 de ouro à sacola" onclick="addToCart('1.053 Ouro MIR4',20)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();addToCart('1.053 Ouro MIR4',20)}"><img class="quote-chest" src="./image1.jpg" alt="Baú de Ouro"><small>VENDA DA AFRODITE</small><strong>R$ 20,00</strong><span>1.053 de ouro</span><small class="quote-action-hint">Clique para adicionar à sacola</small></article><article class="quote-card buy" role="link" tabindex="0" aria-label="Abrir Chat Online para negociar venda de ouro" onclick="openChat('Olá! Tenho interesse em vender ouro para a Afrodite MIR4.')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openChat('Olá! Tenho interesse em vender ouro para a Afrodite MIR4.')}"><img class="quote-chest" src="./image1.jpg" alt="Baú de Ouro"><small>COMPRA DA AFRODITE</small><strong>R$ 16,00</strong><span>1.053 de ouro</span><small class="quote-action-hint">Clique para negociar sua venda</small></article></div>
 </div></section>
 <section class="catalog" id="catalogo"><div class="wrap catalog-layout"><div class="catalog-main"><div class="section-title"><h2>Catálogo de Ouro</h2><p>Escolha seu pacote e adicione à sacola.</p></div><div class="cards four-cards">
 <article class="card"><div class="rank">PACOTE INICIAL</div><div class="coin-art"><img src="./image1.jpg" alt="Baú do Pacote Inicial — 1.053 de Ouro"></div><h3>1.053 de Ouro</h3><div class="price">R$ 20,00</div><button class="gold-btn full" onclick="addToCart('1.053 Ouro MIR4',20)">＋ Adicionar</button></article>
