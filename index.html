@@ -242,6 +242,34 @@ button.admin-launch{
   min-height:0!important;
 }
 
+
+
+/* Correção pontual: recorte da moeda na borda direita do 2º card */
+.catalog .coin-art .coin-crop-2{
+  clip-path:inset(0 16px 0 16px);
+  -webkit-clip-path:inset(0 16px 0 16px);
+}
+
+/* Correção pontual: moldura acompanha a proporção do recorte do banner */
+.catalog .promo-card{
+  height:fit-content!important;
+  min-height:0!important;
+  align-self:center!important;
+  overflow:hidden!important;
+  padding:0!important;
+}
+.catalog .promo-card .promo-crop{
+  position:relative!important;
+  inset:auto!important;
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:1.22/1;
+  background-size:300% 200%!important;
+  background-position:100% 100%!important;
+  overflow:hidden!important;
+}
+
 </style>
 </head>
 <body>
