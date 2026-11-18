@@ -186,6 +186,49 @@ button.admin-launch{
 /* Alinha o início do banner lateral ao topo da fileira de cards */
 .catalog .catalog-layout{align-items:start!important}
 .catalog .promo-card{align-self:start!important;margin-top:0!important}
+
+ 
+/* Limpeza final da coluna promocional: somente o recorte do banner */
+.catalog .promo-card{
+  position:relative!important;
+  min-height:380px!important;
+  height:100%!important;
+  overflow:hidden!important;
+  border:1px solid #81562d!important;
+  border-radius:12px!important;
+  background:#080605!important;
+  box-shadow:0 18px 40px #0009!important;
+  margin-top:82px!important;
+  isolation:isolate;
+}
+.catalog .promo-card>img{display:none!important}
+.catalog .promo-card .promo-crop{
+  position:absolute!important;
+  inset:0!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  background-image:url("./image_17080d4d.jpeg")!important;
+  background-repeat:no-repeat!important;
+  background-size:300% 200%!important;
+  background-position:100% 100%!important;
+  mix-blend-mode:lighten;
+  border-radius:inherit;
+  overflow:hidden;
+  pointer-events:none;
+}
+.catalog .coin-art .coin-legendary-source{
+  width:100%!important;
+  height:140px!important;
+  min-height:140px!important;
+  background-image:url("./image_17080d4d.jpeg")!important;
+  background-repeat:no-repeat!important;
+  background-size:280% 190%!important;
+  background-position:0% 100%!important;
+  mix-blend-mode:lighten;
+  display:block!important;
+}
+
 </style>
 </head>
 <body>
