@@ -548,6 +548,38 @@ button.admin-launch{
   filter:brightness(1.18) contrast(1.12) saturate(1.15)!important;
 }
 
+
+/* Alinhamento vertical do banner com a fileira dos quatro pacotes */
+.catalog .catalog-layout{
+  align-items:stretch!important;
+}
+.catalog .promo-card{
+  aspect-ratio:auto!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:none!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+  /* Mantém o início do banner alinhado ao topo dos quatro cards, abaixo do título */
+  margin-top:82px!important;
+}
+.catalog .promo-card>img.promo-crop{
+  position:relative!important;
+  inset:auto!important;
+  flex:1 1 auto!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  object-fit:cover!important;
+  object-position:center 25%!important;
+  display:block!important;
+  border-radius:12px!important;
+  opacity:1!important;
+  mix-blend-mode:normal!important;
+  filter:brightness(1.18) contrast(1.12) saturate(1.15)!important;
+}
+
 </style>
 </head>
 <body>
