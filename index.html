@@ -476,6 +476,28 @@ button.admin-launch{
   transform-origin:0% 0%!important;
   overflow:hidden!important;
 }
+
+/* Correção do enquadramento: banner inteiro dentro do quadrado, sem zoom */
+.catalog .promo-card{
+  padding:0!important;
+  overflow:hidden!important;
+  aspect-ratio:1 / 1!important;
+  position:relative!important;
+}
+.catalog .promo-card .promo-crop{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  aspect-ratio:auto!important;
+  background-position:100% 100%!important;
+  background-size:300% 200%!important;
+  background-repeat:no-repeat!important;
+  transform:none!important;
+  transform-origin:0% 0%!important;
+  display:block!important;
+}
 </style>
 </head>
 <body>
