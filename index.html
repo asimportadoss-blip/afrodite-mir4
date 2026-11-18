@@ -286,6 +286,46 @@ button.admin-launch{
   mix-blend-mode:lighten!important;
 }
 
+
+
+/* Acabamento dos baús: mistura com o card e bordas suaves */
+.catalog .coin-art{
+  isolation:auto!important;
+  background:transparent!important;
+}
+.catalog .coin-art img{
+  mix-blend-mode:screen!important;
+  background:transparent!important;
+  -webkit-mask-image:radial-gradient(ellipse 75% 70% at center, black 65%, transparent 100%)!important;
+  mask-image:radial-gradient(ellipse 75% 70% at center, black 65%, transparent 100%)!important;
+}
+
+/* Banner lateral alinhado à altura da fileira dos quatro cards */
+.catalog .catalog-layout{
+  align-items:stretch!important;
+}
+.catalog .promo-card{
+  align-self:stretch!important;
+  height:auto!important;
+  min-height:0!important;
+  margin-top:82px!important;
+  padding:0!important;
+  overflow:hidden!important;
+  border-radius:12px!important;
+}
+.catalog .promo-card .promo-crop{
+  position:absolute!important;
+  inset:0!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  aspect-ratio:auto!important;
+  background-size:300% 200%!important;
+  background-position:100% 100%!important;
+  background-repeat:no-repeat!important;
+  overflow:hidden!important;
+}
+
 </style>
 </head>
 <body>
