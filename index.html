@@ -43,7 +43,7 @@ body{background:radial-gradient(ellipse at 50% 0,#2a170d 0,#0d0907 55%);color:va
 .brand{padding:10px 0;gap:12px}.brand-mark{width:58px;height:58px;flex-basis:58px;border-color:#ffcc00}.brand-mark img{object-fit:cover}.logo-placeholder:after{content:"A";font:900 35px Georgia;color:#ffcc00}
 .brand-title{font-size:clamp(21px,3vw,31px);line-height:1.1}.brand-title em,.hero-logo strong{font-style:normal;color:#f8d77b}.brand-title em span,.hero-logo strong span,.footer-brand b span{color:#f04424}
 .brand-title small{letter-spacing:2px}
-.main-nav{display:flex;justify-content:flex-end;align-items:center;gap:8px;background:none;border:0;width:auto}.main-nav a{padding:11px 13px;border:1px solid #5c3a21;border-radius:8px;color:#f7dfb5;background:#1a120d;font-size:13px;text-decoration:none}.main-nav a:hover{background:linear-gradient(120deg,#ff6a00,#d94e00);color:#160b05}
+.main-nav{display:flex;justify-content:flex-end;align-items:center;gap:8px;background:none;border:0;width:auto}.main-nav a{padding:11px 13px;border:1px solid #5c3a21;border-radius:8px;color:#f7dfb5;background:#1a120d;font-size:13px;text-decoration:none}.main-nav a:hover{background:linear-gradient(120deg,#ff6a00,#d94e00);color:#160b05}.nav-count{display:inline-grid;place-items:center;min-width:19px;height:19px;margin-left:4px;padding:0 5px;border-radius:50px;background:#ef4444;color:#fff;font-size:10px}
 .hero{min-height:570px;height:auto;padding:65px 0;background-color:#100b08;background-image:linear-gradient(90deg,rgba(10,6,4,.18),rgba(10,6,4,.9) 65%,#0d0907),url('/images/hero-afrodite.jpg');background-position:center;background-size:cover;position:relative}
 .hero:before{background:linear-gradient(0deg,#0d0907 0%,transparent 35%)}.hero .wrap{justify-content:space-between}.hero-layout{display:grid!important;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);align-items:center;gap:30px;position:relative}.hero-copy{width:auto;text-align:left;padding:30px 0}.hero-logo{font:900 clamp(39px,5vw,68px)/1.05 Cinzel,Georgia,serif;letter-spacing:2px;color:#ffcc00;text-shadow:0 4px 22px #000}.hero-logo strong{display:block;font-size:.72em}.hero-copy p{font:600 clamp(16px,2vw,21px)/1.5 Arial;color:#fff1d7;max-width:560px}
 .hero-badges{display:flex;flex-wrap:wrap;gap:9px;margin-top:24px}.hero-badges span{padding:10px 12px;border:1px solid #9c692f;border-radius:30px;background:#160e0bd9;color:#ffe1a6;font-size:12px;font-weight:700}
@@ -65,7 +65,7 @@ footer{background:#100b08;border-color:#704626;padding:35px 0 24px}.footer-trust
 <body>
 <header class="site-header"><div class="wrap header-inner">
 <a class="brand" href="#inicio"><span class="brand-mark"><img src="/images/logo.png" alt="Logo Afrodite MIR4" onerror="this.style.display='none';this.parentElement.classList.add('logo-placeholder')"></span><span class="brand-title">AFRODITE <em>MIR<span>4</span></em><small>OURO • COMPRA • VENDA</small></span></a>
-<nav class="main-nav" aria-label="Menu principal"><a href="#inicio">⌂ <span>Início</span></a><a href="#sacola">▣ <span>Sacola</span></a><a href="#faq">＋ <span>FAQ</span></a><a href="#suporte" onclick="openChat()">◉ <span>Suporte</span></a></nav>
+<nav class="main-nav" aria-label="Menu principal"><a href="#inicio">⌂ <span>Início</span></a><a href="#sacola">▣ <span>Sacola</span><b id="cartCount" class="nav-count">0</b></a><a href="#faq">＋ <span>FAQ</span></a><a href="#suporte" onclick="openChat()">◉ <span>Suporte</span></a></nav>
 </div></header>
 <main>
 <section class="hero" id="inicio"><div class="hero-shade"></div><div class="wrap hero-layout">
