@@ -855,4 +855,36 @@ try{initAdminRoute()}catch(error){console.error('Falha ao abrir a área administ
   portrait.src='./image_601c32e6.jpeg';
 })();
 </script>
+
+<script>
+(function(){
+ const path=window.location.pathname.replace(/\/+$/,'');
+ if(path!=='/adm' && !path.endsWith('/adm')) return;
+ document.body.classList.add('admin-route');
+ const app=document.getElementById('adminApp');
+ if(!app) return;
+ app.style.display='block';
+ const form=document.getElementById('admLoginForm');
+ if(!form || form.dataset.serverAuthBound==='1') return;
+ form.dataset.serverAuthBound='1';
+ const show=()=>{document.getElementById('adminLoginScreen').style.display='none';document.getElementById('adminWorkspace').hidden=false;window.admAuthenticated=true;if(typeof renderAdmin==='function')renderAdmin()};
+ fetch('/api/auth',{credentials:'same-origin',cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{if(d&&d.authenticated)show()}).catch(()=>{});
+ form.addEventListener('submit',async function(e){
+  e.preventDefault();
+  const button=document.getElementById('admLoginButton');
+  const error=document.getElementById('admLoginError');
+  button.disabled=true;button.textContent='Verificando...';error.textContent='';
+  try{
+   const response=await fetch('/api/auth',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:document.getElementById('admUser').value.trim(),password:document.getElementById('admPassword').value})});
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok||!data.authenticated){error.textContent=data.error||'Usuário ou senha incorretos.';return}
+   document.getElementById('admPassword').value='';show();
+  }catch(err){error.textContent='Falha ao validar o acesso. Tente novamente.'}
+  finally{button.disabled=false;button.textContent='Entrar no painel'}
+ });
+ const logout=document.getElementById('admLogout');
+ if(logout && !logout.dataset.serverAuthBound){logout.dataset.serverAuthBound='1';logout.addEventListener('click',()=>fetch('/api/auth',{method:'DELETE',credentials:'same-origin'}).finally(()=>window.location.assign('/')))}
+})();
+</script>
+
 </body></html>
