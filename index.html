@@ -530,6 +530,24 @@ button.admin-launch{
   mix-blend-mode:normal!important;
 }
 
+
+/* Brilho e nitidez somente na imagem do banner lateral */
+.catalog .promo-card{
+  background:transparent!important;
+}
+.catalog .promo-card::before,
+.catalog .promo-card::after{
+  content:none!important;
+  display:none!important;
+  background:none!important;
+  opacity:0!important;
+}
+.catalog .promo-card .promo-crop{
+  opacity:1!important;
+  mix-blend-mode:normal!important;
+  filter:brightness(1.18) contrast(1.12) saturate(1.15)!important;
+}
+
 </style>
 </head>
 <body>
