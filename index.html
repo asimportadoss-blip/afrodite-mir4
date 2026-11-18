@@ -170,14 +170,22 @@ button.admin-launch{
 
 /* Banner lateral restaurado às regras originais de altura e enquadramento. */
 
-.catalog .coin-legendary-image{
- width:100%;
- height:140px;
+/* Reaproveita a pilha dourada já presente no painel panorâmico no card lendário */
+.catalog .coin-art .coin-legendary-source{
+ width:100%!important;
+ height:140px!important;
+ min-height:140px!important;
+ background-image:url("./image_17080d4d.jpeg")!important;
+ background-repeat:no-repeat!important;
+ background-size:280% 190%!important;
+ background-position:0% 100%!important;
  object-fit:contain;
- object-position:center;
  mix-blend-mode:lighten;
- display:block;
+ display:block!important;
 }
+/* Alinha o início do banner lateral ao topo da fileira de cards */
+.catalog .catalog-layout{align-items:start!important}
+.catalog .promo-card{align-self:start!important;margin-top:0!important}
 </style>
 </head>
 <body>
@@ -195,7 +203,7 @@ button.admin-launch{
 <article class="card"><div class="rank">PACOTE INICIAL</div><div class="coin-art"><span class="coin-crop coin-crop-1" role="img" aria-label="Pilha de 1.053 moedas de ouro"></span></div><h3>1.053 de Ouro</h3><div class="price">R$ 20,00</div><button class="gold-btn full" onclick="addToCart('1.053 Ouro MIR4',20)">＋ Adicionar</button></article>
 <article class="card"><div class="rank">PACOTE POPULAR</div><div class="coin-art"><span class="coin-crop coin-crop-2" role="img" aria-label="Pilha de 5.265 moedas de ouro"></span></div><h3>5.265 de Ouro</h3><div class="price">R$ 95,00</div><button class="gold-btn full" onclick="addToCart('5.265 Ouro MIR4',95)">＋ Adicionar</button></article>
 <article class="card"><div class="rank">PACOTE AVANÇADO</div><div class="coin-art"><span class="coin-crop coin-crop-3" role="img" aria-label="Pilha de 10.530 moedas de ouro"></span></div><h3>10.530 de Ouro</h3><div class="price">R$ 190,00</div><button class="gold-btn full" onclick="addToCart('10.530 Ouro MIR4',190)">＋ Adicionar</button></article>
-<article class="card"><div class="rank">PACOTE LENDÁRIO</div><div class="coin-art"><img class="coin-legendary-image" src="./moedas-lendario.jpeg" alt="Pilha lendária de 21.060 moedas de ouro"></div><h3>21.060 de Ouro</h3><div class="price">R$ 380,00</div><button class="gold-btn full" onclick="addToCart('21.060 Ouro MIR4',380)">＋ Adicionar</button></article>
+<article class="card"><div class="rank">PACOTE LENDÁRIO</div><div class="coin-art"><span class="coin-crop coin-crop-4 coin-legendary-source" role="img" aria-label="Pilha gigante de moedas de ouro do pacote lendário"></span></div><h3>21.060 de Ouro</h3><div class="price">R$ 380,00</div><button class="gold-btn full" onclick="addToCart('21.060 Ouro MIR4',380)">＋ Adicionar</button></article>
 </div></div><aside class="promo-card"><div class="promo-crop" role="img" aria-label="Banner MIR4 Jogue Mais, Evolua Mais"></div></aside></div></section>
 <section class="faq-cart" id="faq"><div class="wrap faq-cart-grid"><div class="panel faq-panel"><div class="section-title left"><h2>Perguntas Frequentes</h2><p>Informações para comprar com tranquilidade.</p></div>
 <details><summary>Como funciona a taxa de 5%?</summary><p>A taxa de 5% é calculada sobre o valor dos pacotes e aparece discriminada no resumo antes de finalizar o pedido.</p></details>
