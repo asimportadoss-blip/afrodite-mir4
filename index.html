@@ -371,6 +371,42 @@ button.admin-launch{
   background-repeat:no-repeat!important;
 }
 
+
+
+/* Correções pontuais do catálogo: baús sem caixa escura e banner sem corte */
+.catalog .coin-art{
+  background:transparent!important;
+}
+.catalog .coin-art img{
+  background:transparent!important;
+  filter:contrast(1.25) brightness(1.05)!important;
+  mix-blend-mode:lighten!important;
+  -webkit-mask-image:radial-gradient(ellipse 65% 60% at center, black 50%, transparent 92%)!important;
+  mask-image:radial-gradient(ellipse 65% 60% at center, black 50%, transparent 92%)!important;
+}
+.catalog .promo-card{
+  height:fit-content!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:auto!important;
+  align-self:center!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+.catalog .promo-card .promo-crop{
+  position:relative!important;
+  inset:auto!important;
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:1.22 / 1!important;
+  background-size:300% 200%!important;
+  background-position:100% 100%!important;
+  background-repeat:no-repeat!important;
+  object-fit:contain!important;
+  object-position:center!important;
+}
+
 </style>
 </head>
 <body>
