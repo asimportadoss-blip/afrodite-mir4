@@ -127,6 +127,46 @@ button,a,[role="button"],[role="link"],.admin-launch,.admin-footer,.chat-launch{
 .catalog .coin-crop-3{background-position:100% 0%;background-size:280% 190%}
 .catalog .coin-crop-4{background-position:0% 100%;background-size:260% 180%}
 @media(max-width:540px){.admin-launch{left:10px!important;bottom:10px!important}.chat-launch{right:10px!important;bottom:10px!important}}
+
+/* Correção de posição fixa do chat e máscara elíptica das moedas */
+button.chat-launch{
+ position:fixed!important;
+ position:fixed!important;
+ right:24px!important;
+ bottom:24px!important;
+ left:auto!important;
+ top:auto!important;
+ z-index:9999!important;
+ pointer-events:auto!important;
+}
+button.admin-launch{
+ position:fixed!important;
+ left:24px!important;
+ bottom:24px!important;
+ right:auto!important;
+ top:auto!important;
+ z-index:9998!important;
+ pointer-events:auto!important;
+}
+.catalog .coin-art{
+ display:flex!important;
+ align-items:center!important;
+ justify-content:center!important;
+ overflow:hidden!important;
+}
+.catalog .coin-crop{
+ overflow:hidden!important;
+ -webkit-mask-image:radial-gradient(ellipse 68% 58% at 50% 46%, #000 58%, transparent 88%)!important;
+ mask-image:radial-gradient(ellipse 68% 58% at 50% 46%, #000 58%, transparent 88%)!important;
+}
+.catalog .coin-crop-4{
+ background-position:8% 100%!important;
+ background-size:260% 180%!important;
+}
+@media(max-width:540px){
+ button.chat-launch{right:24px!important;bottom:24px!important}
+ button.admin-launch{left:24px!important;bottom:24px!important}
+}
 </style>
 </head>
 <body>
