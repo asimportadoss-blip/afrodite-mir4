@@ -102,6 +102,15 @@ button,.main-nav a,.quote-card[role="button"],.quote-card[role="link"],.admin-la
 .quote-card[role="button"],.quote-card[role="link"]{cursor:pointer;transition:transform .18s ease,border-color .18s ease}
 .quote-card[role="button"]:hover,.quote-card[role="link"]:hover{transform:translateY(-3px)}
 .quote-action-hint{font-size:10px!important;color:#ffcc00!important;letter-spacing:.3px}
+
+/* Proteção global contra camadas decorativas bloqueando os cliques */
+.site-header{position:relative;z-index:100}
+.site-header .main-nav,.site-header .brand{position:relative;z-index:101;pointer-events:auto}
+.hero-shade,.hero-character,.hero-character img,.promo-crop,.coin-crop,.background-glow,.hero::before,.hero::after,.catalog::before,.catalog::after{pointer-events:none!important}
+button,a,[role="button"],[role="link"],.admin-launch,.admin-footer,.chat-launch{pointer-events:auto;position:relative;z-index:10}
+.quote-card{cursor:pointer;pointer-events:auto;z-index:11}
+.modal{z-index:200}.cart-drawer,.drawer-backdrop{z-index:150}
+.checkout-open{display:block!important}
 </style>
 </head>
 <body>
@@ -254,7 +263,15 @@ function initFirebase(){
  }catch(err){console.error('Falha ao iniciar Firebase Afrodite:',err);firebaseEnabled=false}
 }
 
-initFirebase();renderCart();
+// Disponibiliza explicitamente as ações usadas pelos onclick do HTML.
+Object.assign(window,{
+ showPage,addToCart,openSellWhatsApp,openCart,closeCart,closeCheckout,startCheckout,
+ changeQty,removeCartItem,copyPix,confirmPayment,goStep,showExample,submitOrder,
+ openChat,closeChat,sendChat,openAdmin,closeAdmin,loginAdmin,replyChat
+});
+// Inicialização isolada: uma falha opcional não deve desativar os demais botões.
+try{initFirebase()}catch(error){console.error('Falha na inicialização do Firebase:',error)}
+try{renderCart()}catch(error){console.error('Falha ao desenhar a sacola:',error);document.body.dataset.cartError='true'}
 </script>
 
 <script>
