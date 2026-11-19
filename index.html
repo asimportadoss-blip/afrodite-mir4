@@ -636,6 +636,17 @@ body.admin-route>header,body.admin-route>main:not(#adminApp),body.admin-route>fo
 @media(max-width:850px){.adm-topbar{flex-wrap:wrap;gap:10px;padding:10px}.adm-top-brand{min-width:150px}.adm-stats{order:3;flex-basis:100%;overflow:auto}.adm-stat{flex:1}.adm-content{grid-template-columns:260px minmax(0,1fr)}}
 @media(max-width:600px){.adm-content{grid-template-columns:112px minmax(0,1fr)}.adm-contact{padding:12px 7px;gap:6px;flex-direction:column;align-items:flex-start}.adm-contact-avatar{width:34px;height:34px;flex-basis:34px}.adm-contact-main{width:100%}.adm-contact-line{display:block}.adm-contact-line small{display:block;margin-top:3px}.adm-contact-sub{font-size:9px}.adm-sidebar-head{padding:8px;justify-content:center}.adm-sidebar-head h2{font-size:11px}.adm-sidebar-head span{display:none}.adm-top-brand{flex:1}.adm-logout{font-size:10px;padding:8px}.adm-stat{min-width:95px;padding:8px}.adm-stat strong{font-size:14px}.adm-chat-header{padding:0 10px}.adm-order-card{padding:10px}.adm-order-data{gap:6px}.adm-order-data span{font-size:10px}.adm-messages{padding:12px 8px}.adm-message{max-width:92%;font-size:12px}.adm-reply-form{padding:9px;gap:6px}.adm-reply-form input{padding:10px}.adm-reply-form button{padding:0 12px}}
 
+
+/* Faixa de atendimento ampliada para facilitar a leitura */
+.business-hours-banner .wrap{min-height:76px;padding:18px 16px;gap:30px;font-size:16px}
+.business-hours-banner strong{font-size:18px;letter-spacing:.2px}
+.business-hours-banner span{font-size:15px}
+@media(max-width:600px){
+ .business-hours-banner .wrap{min-height:0;flex-direction:column;gap:8px;padding:16px 12px;text-align:center}
+ .business-hours-banner strong{font-size:17px}
+ .business-hours-banner span{font-size:14px;white-space:normal;line-height:1.4}
+}
+
 </style>
 </head>
 <body>
