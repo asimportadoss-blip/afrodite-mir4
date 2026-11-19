@@ -37,6 +37,19 @@ export async function onRequest({request,env}){
   if(!rows?.length)return json({error:"Pedido não encontrado. Confira o identificador retornado pela InfinitePay."},404);
   const row=rows[0];
   const canonicalOrderNsu=String(row.order_nsu||"");
+  // O order_nsu é AFR-...; o ID do atendimento é armazenado separadamente em itens.atendimento_id.
+  // Primeiro verificamos o status persistido no atendimento vinculado à cobrança.
+  const attendanceId=String(row.itens?.atendimento_id||"");
+  if(attendanceId){
+   const attendance=await db(env,"atendimentos?select=id,status_pedido&id=eq."+encodeURIComponent(attendanceId));
+   if(attendance?.[0]?.status_pedido==="pago"||attendance?.[0]?.status_pedido==="em_andamento"||attendance?.[0]?.status_pedido==="entregue"){
+    return json({paid:true,status:"pago",order_nsu:canonicalOrderNsu,server:row.itens?.server||null,items:row.itens?.items||[]});
+   }
+  }
+  if(row.status==="pago"){
+   await syncAttendance(env,row.itens||{},"pago");
+   return json(paymentResponse(row));
+  }
   if(!canonicalOrderNsu)return json({error:"O pedido encontrado não possui identificador de cobrança."},409);
   if(row.status!=="pendente"&&row.status!=="pago")return json({paid:false,status:"pendente",status_pedido:"pendente",pending:true,error:"Este pedido não está disponível para confirmação."},409);
   transactionNsu=transactionNsu||String(row.transaction_nsu||"").trim();
