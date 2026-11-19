@@ -781,9 +781,9 @@ async function startInfinitePayCheckout(){
   const response=await fetch('/api/infinitepay/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({server:el('cartServer').value,atendimento_id:chatSession?.id||null,items:cart.map(x=>({name:x.name,qty:x.qty}))})});
   const data=await response.json().catch(()=>({}));
   if(!response.ok||!data.url)throw new Error(data.error||'Não foi possível iniciar o pagamento.');
-  localStorage.setItem('pedido_pendente',JSON.stringify({order_nsu:data.order_nsu,atendimento_id:chatSession?.id||null,server:el('cartServer').value,items:cart.map(x=>({...x})),total:cartTotal(),saved_at:Date.now()}));
+  const canonicalOrderNsu=String(data.order_nsu||'').trim();if(!canonicalOrderNsu)throw new Error('A InfinitePay não retornou o identificador do pedido.');localStorage.setItem('pedido_pendente',JSON.stringify({order_nsu:canonicalOrderNsu,pedido_id:canonicalOrderNsu,atendimento_id:chatSession?.id||null,server:el('cartServer').value,items:cart.map(x=>({...x})),total:cartTotal(),saved_at:Date.now()}));
   localStorage.setItem('afrodite_cart_pending',JSON.stringify(cart));
-  localStorage.setItem('afrodite_infinitepay_order_nsu',data.order_nsu);
+  localStorage.setItem('afrodite_infinitepay_order_nsu',canonicalOrderNsu);
   window.location.assign(data.url);
  }catch(error){showToast(error.message||'Falha ao iniciar o pagamento.');button.disabled=false;button.textContent='CONTINUAR PARA PAGAMENTO SEGURO'}
 }
