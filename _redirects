@@ -1,2 +1,3 @@
-/adm /adm/index.html 200
-/adm/ /adm/index.html 200
+/adm /index.html 200
+/adm/ /index.html 200
+/adm/index.html /index.html 200
