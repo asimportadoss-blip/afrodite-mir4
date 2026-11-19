@@ -860,7 +860,7 @@ async function handleInfinitePayReturn(){
  try{await verifyInfinitePayReturn(10)}
  catch(error){
   el('cardPaymentStatus').textContent=error.message;
-  if(error.message.includes('Diagnóstico enviado/recebido:'))el('cardPaymentStatus').style.whiteSpace='pre-wrap';
+
   const button=el('cardPayButton');button.disabled=false;button.textContent='CONSULTAR PAGAMENTO NOVAMENTE';button.onclick=retryInfinitePayConfirmation;
   startInfinitePayStatusPolling();
   showToast(error.message);
