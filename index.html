@@ -698,7 +698,7 @@ body.admin-route>header,body.admin-route>main:not(#adminApp),body.admin-route>fo
 <script>
 const firebaseConfig = { apiKey: 'COLE_AQUI_SUA_API_KEY', authDomain: 'SEU_PROJETO.firebaseapp.com', databaseURL: 'https://SEU_PROJETO-default-rtdb.firebaseio.com', projectId: 'SEU_PROJETO', storageBucket: 'SEU_PROJETO.appspot.com', messagingSenderId: 'SEU_SENDER_ID', appId: 'SEU_APP_ID' };
 const PIX_KEY='69391561000165',PIX_NAME='AFRODITE MIR4',PIX_CITY='OLINDA',DB_KEY='afrodite_store_orders_v1',CHAT_KEY='afrodite_store_chat_v1',SELLER_WHATSAPP='5581973438718';
-let firebaseDb=null,firebaseEnabled=false,cardPaymentDetails=null;
+let firebaseDb=null,firebaseEnabled=false,cardPaymentDetails=null,infinitePayPollTimer=null,infinitePayPollBusy=false;
 let cart=[],currentStep=1,selectedFile=null,pixReceiptFile=null,adminOpen=false,activeOrder=null,toastTimer=null,paymentConfirmed=false,paymentMethod='pix';
 const el=id=>document.getElementById(id),money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const INFINITEPAY_RETURN_KEY='afrodite_infinitepay_return';
@@ -786,6 +786,7 @@ async function verifyInfinitePayReturn(attempts=10){
    const data=await response.json().catch(()=>({}));
    if(!cart.length&&Array.isArray(data.items)&&data.items.length){cart=data.items.map(item=>({name:item.name,price:Number(item.price_centavos)/100,qty:Number(item.quantity)}));if(data.server&&el('cartServer'))el('cartServer').value=data.server;renderCart();el('pixTotalValue').textContent=money(grandTotal());}
    if(response.ok&&data.paid===true){
+    if(infinitePayPollTimer){clearInterval(infinitePayPollTimer);infinitePayPollTimer=null;}
     cart=(data.items||[]).map(item=>({name:item.name,price:Number(item.price_centavos)/100,qty:Number(item.quantity)}));
     cardPaymentDetails={installments:data.capture_method==='credit_card'?Number(data.installments):null,amount:Number(data.amount),paidAmount:Number(data.paid_amount||data.amount)};
     if(!cart.length||!['SA1','NA1'].includes(data.server))throw new Error('Pagamento confirmado, mas não foi possível recuperar os dados do pedido. Fale com o atendimento.');
@@ -798,11 +799,21 @@ async function verifyInfinitePayReturn(attempts=10){
     return true;
    }
    lastMessage=data.error||'A InfinitePay ainda não confirmou o pagamento.';
+   if(data.diagnostic)lastMessage+='\n\nDiagnóstico enviado/recebido:\n'+JSON.stringify({enviado:data.diagnostic.enviado,resposta_http:data.diagnostic.resposta_http,resposta:data.diagnostic.resposta},null,2);
    if(response.status>=400&&response.status!==409&&response.status!==404)lastMessage=data.error||'Não foi possível consultar a confirmação agora.';
   }catch(error){lastMessage=error.message||'Falha temporária ao consultar o pagamento.'}
   if(attempt<attempts)await new Promise(resolve=>setTimeout(resolve,2000));
  }
  throw new Error(lastMessage+' Você pode consultar novamente sem fazer outro pagamento.');
+}
+function startInfinitePayStatusPolling(){
+ if(infinitePayPollTimer)clearInterval(infinitePayPollTimer);
+ infinitePayPollTimer=setInterval(async()=>{
+  if(currentStep!==1||paymentConfirmed||infinitePayPollBusy)return;
+  infinitePayPollBusy=true;
+  try{await verifyInfinitePayReturn(1)}catch(error){if(el('cardPaymentStatus')&&!error.message.includes('pedido pendente'))el('cardPaymentStatus').textContent=error.message}
+  finally{infinitePayPollBusy=false}
+ },3000);
 }
 async function retryInfinitePayConfirmation(){
  const button=el('cardPayButton');button.disabled=true;
@@ -816,6 +827,7 @@ async function handleInfinitePayReturn(){
  el('checkout').classList.add('checkout-open');el('cartPage').style.display='none';document.body.classList.add('subpage-active');
  setPaymentMethod(capture_method==='credit_card'?'card':'pix');
  el('cardPaymentStatus').textContent='Conferindo o pagamento com a InfinitePay...';el('cardPayButton').disabled=true;
+ startInfinitePayStatusPolling();
  try{await verifyInfinitePayReturn(10)}
  catch(error){
   el('cardPaymentStatus').textContent=error.message;
