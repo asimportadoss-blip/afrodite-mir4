@@ -27,7 +27,7 @@ export async function onRequest({request,env}){
    const rows=await db(env,"atendimentos?select=id,cliente_nome,servidor,pacote,valor_total,status_item_mercado,print_url,status_pedido,ultima_mensagem,nao_lidas,atualizado_em&order=atualizado_em.desc");
    const atendimentos=rows.map(({cliente_nome,ultima_mensagem,...row})=>({...row,nome_do_cliente:cliente_nome,"última_mensagem":ultima_mensagem}));
    const selected=url.searchParams.get("atendimento_id");
-   if(selected){const msgs=await db(env,"mensagens?select=id,atendimento_id,referente,texto,criado_em&atendimento_id=eq."+encodeURIComponent(selected)+"&order=criado_em.asc");return json({atendimento:atendimentos.find(x=>x.id===selected)||null,mensagens:msgs})}
+   if(selected){const rawMsgs=await db(env,"mensagens?select=id,atendimento_id,remetente,texto,criado_em&atendimento_id=eq."+encodeURIComponent(selected)+"&order=criado_em.asc");const msgs=rawMsgs.map(({remetente,...m})=>({...m,referente:remetente}));return json({atendimento:atendimentos.find(x=>x.id===selected)||null,mensagens:msgs})}
    return json({atendimentos});
   }
   if(request.method==="GET"){
@@ -35,7 +35,7 @@ export async function onRequest({request,env}){
    if(!token){token=b64(crypto.getRandomValues(new Uint8Array(32)));const hash=await digest(token);const id="AFR-"+crypto.randomUUID();await db(env,"atendimentos",{method:"POST",body:JSON.stringify({id,cliente_nome:"Visitante MIR4",status_pedido:"chat_ativo",nao_lidas:0,token_hash:hash})});setCookie=sessionCookie(token)}
    const hash=await digest(token),found=await db(env,"atendimentos?select=id,cliente_nome,servidor,pacote,valor_total,status_pedido&id=not.is.null&token_hash=eq."+encodeURIComponent(hash));
    if(!found.length)return json({error:"Sessão de atendimento inválida."},401);
-   const msgs=await db(env,"mensagens?select=id,referente,texto,criado_em&atendimento_id=eq."+encodeURIComponent(found[0].id)+"&order=criado_em.asc");
+   const rawMsgs=await db(env,"mensagens?select=id,remetente,texto,criado_em&atendimento_id=eq."+encodeURIComponent(found[0].id)+"&order=criado_em.asc");const msgs=rawMsgs.map(({remetente,...m})=>({...m,referente:remetente}));
    return json({atendimento:found[0],mensagens:msgs},200,setCookie?{"Set-Cookie":setCookie}:{});
   }
   if(request.method==="POST"){
@@ -51,11 +51,11 @@ export async function onRequest({request,env}){
     if(!found.length)return json({error:"Sessão de atendimento inválida."},403);
     atendimentoId=found[0].id;referente="cliente";
    }
-   const inserted=await db(env,"mensagens",{method:"POST",body:JSON.stringify({atendimento_id:atendimentoId,referente,texto:text})});
+   const inserted=await db(env,"mensagens",{method:"POST",body:JSON.stringify({atendimento_id:atendimentoId,remetente:referente,texto:text})});
    const patch={ultima_mensagem:text,atualizado_em:new Date().toISOString()};
    if(referente==="cliente")patch.nao_lidas=1;
    await db(env,"atendimentos?id=eq."+encodeURIComponent(atendimentoId),{method:"PATCH",body:JSON.stringify(patch)});
-   return json({ok:true,mensagem:inserted?.[0]||null});
+   const mensagem=inserted?.[0]?(({remetente,...m})=>({...m,referente:remetente}))(inserted[0]):null;return json({ok:true,mensagem});
   }
   return json({error:"Método não permitido."},405);
  }catch(e){return fail(e)}
