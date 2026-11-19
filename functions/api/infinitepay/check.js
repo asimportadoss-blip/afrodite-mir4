@@ -14,10 +14,12 @@ export async function onRequest({request,env}) {
     const order=String(body.order_nsu||"");
     const transaction=String(body.transaction_nsu||"");
     const slug=String(body.slug||"");
-    if(!/^AFR-[0-9a-f-]{36}$/i.test(order) || !transaction || !slug) return json({paid:false,pending:true});
+    console.log("InfinitePay check request received",{has_order:!!order,has_transaction:!!transaction,has_slug:!!slug});
+    if(!/^AFR-[0-9a-f-]{36}$/i.test(order)) { console.error("InfinitePay check missing or invalid order_nsu"); return json({error:"Não recebemos o identificador do pedido no retorno da InfinitePay."},400); }
     const rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&order_nsu=eq."+encodeURIComponent(order));
     if(!rows?.length) return json({error:"Pedido não encontrado."},404);
-    if(rows[0].status==="pago") return json({paid:true,server:rows[0].itens?.server,items:rows[0].itens?.items||[],capture_method:rows[0].itens?.capture_method||null,installments:rows[0].itens?.installments||null,amount:rows[0].total_centavos,paid_amount:rows[0].itens?.paid_amount||rows[0].total_centavos});
+    if(rows[0].status==="pago") { console.log("InfinitePay check: order already confirmed by webhook"); return json({paid:true,server:rows[0].itens?.server,items:rows[0].itens?.items||[],capture_method:rows[0].itens?.capture_method||null,installments:rows[0].itens?.installments||null,amount:rows[0].total_centavos,paid_amount:rows[0].itens?.paid_amount||rows[0].total_centavos}); }
+    if(!transaction || !slug) { console.error("InfinitePay check missing return identifiers",{has_transaction:!!transaction,has_slug:!!slug,db_has_transaction:!!rows[0].transaction_nsu,db_has_slug:!!rows[0].invoice_slug}); return json({paid:false,pending:true,error:"O retorno da InfinitePay chegou sem o identificador da transação ou da cobrança. A notificação automática ainda não confirmou este pedido."},409); }
     const response=await fetch("https://api.checkout.infinitepay.io/payment_check",{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({handle:HANDLE,order_nsu:order,transaction_nsu:transaction,slug})
@@ -48,6 +50,7 @@ export async function onRequest({request,env}) {
     });
     return json({paid:true,server:rows[0].itens?.server,items:rows[0].itens?.items||[],capture_method:method,installments,amount:Number(result.amount),paid_amount:Number(result.paid_amount||result.amount)});
   } catch(error) {
+    console.error("InfinitePay check internal error",{message:error?.message||"unknown"});
     return json({error:"Não foi possível confirmar o pagamento agora. Atualize a página em instantes."},500);
   }
 }
