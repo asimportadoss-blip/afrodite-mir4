@@ -863,8 +863,12 @@ async function submitOrder(){
  const atendimentoId=pending?.atendimento_id||chatSession?.id;
  if(!atendimentoId){showToast('Não foi possível localizar seu atendimento. Atualize a página e tente novamente.');return}
  const items=cart.map(x=>({...x}));
- const subtotal=Number(pending?.total||cartTotal());
- const total=cardPaymentDetails?Number(cardPaymentDetails.paidAmount||cardPaymentDetails.amount)/100:subtotal;
+ const cartValue=items.reduce((sum,item)=>sum+Number(item.price||0)*Number(item.qty||1),0);
+ const savedValue=Number(pending?.total||0);
+ const subtotal=savedValue>0?savedValue:cartValue;
+ const paidCents=Number(cardPaymentDetails?.paidAmount||cardPaymentDetails?.amount||0);
+ const total=paidCents>0?paidCents/100:subtotal;
+ if(!(total>0)){showToast('Não foi possível recuperar o valor pago. Seus dados foram preservados; fale com o atendimento.');return}
  const orderId=pending?.order_nsu||atendimentoId;
  const order={id:orderId,date:Date.now(),items,subtotal,total,server,proof:selectedFile,marketStatus:market.value,paymentStatus:'Pagamento aprovado automaticamente via InfinitePay.'};
  const packages=items.map(x=>x.name+' x '+x.qty).join(', ');
@@ -873,7 +877,7 @@ async function submitOrder(){
  if(submitButton){submitButton.disabled=true;submitButton.textContent='ENVIANDO PEDIDO...'}
  try{
   if(!chatSession)await loadCustomerChat();
-  await chatApi('/api/chat',{method:'POST',body:JSON.stringify({order_complete:true,atendimento_id:atendimentoId,order_id:order.id,servidor:server,pacote:packages,valor_total:total,status_item_mercado:market.value,print_url:selectedFile.data,text:summary})});
+  await chatApi('/api/chat',{method:'POST',body:JSON.stringify({order_complete:true,atendimento_id:atendimentoId,order_id:order.id,cliente_nome:chatSession?.cliente_nome||chatSession?.nome_do_cliente||'Cliente Afrodite',servidor:server,pacote:packages,valor_total:total,status_item_mercado:market.value,print_url:selectedFile.data,text:summary})});
   const all=getOrders();all.unshift(order);saveOrders(all);
   el('orderSuccess').textContent='✓ Pedido '+order.id+' recebido! Acompanhe a conferência e a entrega pelo chat interno.';
   el('orderSuccess').classList.add('show');
