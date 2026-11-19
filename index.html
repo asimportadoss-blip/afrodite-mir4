@@ -788,7 +788,7 @@ async function retryInfinitePayConfirmation(){
 }
 async function handleInfinitePayReturn(){
  const params=new URLSearchParams(window.location.search);
- if(params.get('infinitepay')!=='return'&&params.get('retorno_pagamento')!=='1'&&!params.get('pedido_id')&&!params.get('order_nsu'))return;
+ if(params.get('infinitepay')!=='return'&&params.get('retorno_pagamento')!=='1'&&!params.get('pedido_id')&&!params.get('order_nsu')&&!params.get('transaction_nsu')&&!params.get('slug')&&!params.get('capture_method'))return;
  const capture_method=params.get('capture_method');
  el('checkout').classList.add('checkout-open');el('cartPage').style.display='none';document.body.classList.add('subpage-active');
  setPaymentMethod(capture_method==='credit_card'?'card':'pix');
