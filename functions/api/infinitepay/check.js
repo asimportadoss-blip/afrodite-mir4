@@ -39,7 +39,7 @@ export async function onRequest({request,env}){
   const response=await fetch("https://api.infinitepay.io/invoices/public/checkout/payment_check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sent)});
   const raw=await response.text();let result;try{result=raw?JSON.parse(raw):null}catch{result={raw_response:raw};}
   console.log("InfinitePay payment_check",{http_status:response.status,success:result?.success??null,paid:result?.paid??null,has_order:true,has_transaction:!!transactionNsu,has_slug:!!slug});
-  if(!response.ok||result?.success!==true||result?.paid!==true){
+  if(!response.ok||result?.success===false||result?.paid!==true){
    return json({paid:false,pending:true,error:!response.ok?"A InfinitePay respondeu HTTP "+response.status+".":"A InfinitePay ainda não confirmou o pagamento.",diagnostic:{resposta_http:response.status}},response.ok?409:502);
   }
   const method=result.capture_method,installments=method==="credit_card"?Number(result.installments):null;
