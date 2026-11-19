@@ -59,11 +59,24 @@ export async function onRequest({request, env}) {
       headers:{"Content-Type":"application/json","X-Api-Key":env.INFINITEPAY_API_KEY},
       body:JSON.stringify(payload)
     });
-    const data = await response.json().catch(()=>null);
-    const checkoutUrl = typeof data?.url === "string" ? new URL(data.url) : null;
-    if (!response.ok || !checkoutUrl || checkoutUrl.protocol !== "https:" || checkoutUrl.hostname !== "checkout.infinitepay.com.br") {
+    const rawResponse = await response.text();
+    let data = null;
+    try { data = rawResponse ? JSON.parse(rawResponse) : null; } catch { data = null; }
+    let checkoutUrl = null;
+    let urlProblem = "";
+    if (typeof data?.url === "string" && data.url) {
+      try { checkoutUrl = new URL(data.url); }
+      catch { urlProblem = "O campo url retornado não contém um endereço válido."; }
+    }
+    const validUrl = checkoutUrl && checkoutUrl.protocol === "https:" && checkoutUrl.hostname === "checkout.infinitepay.com.br";
+    if (!response.ok || !validUrl) {
       await supabase(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(order_nsu),{method:"PATCH",body:JSON.stringify({status:"erro"})}).catch(()=>{});
-      return json({error:data?.message || "A InfinitePay não retornou um endereço de pagamento válido. Tente novamente."},502);
+      const providerMessage = [data?.message, data?.error, data?.detail].find(value => typeof value === "string" && value.trim());
+      const reason = !response.ok
+        ? "A InfinitePay respondeu HTTP " + response.status + (providerMessage ? ": " + providerMessage.slice(0,240) : ".")
+        : urlProblem || (checkoutUrl ? "A InfinitePay retornou um domínio de checkout inesperado: " + checkoutUrl.hostname : "A resposta da InfinitePay não contém o campo url.");
+      console.error("InfinitePay link creation failed", {status:response.status, responseFields:data && typeof data === "object" ? Object.keys(data) : [], reason});
+      return json({error:reason},502);
     }
     return json({url:checkoutUrl.href,order_nsu});
   } catch (error) {
