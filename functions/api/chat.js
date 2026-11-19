@@ -46,19 +46,56 @@ export async function onRequest(context){
    const rows=await db(env,"atendimentos?select=id,cliente_nome,servidor,pacote,valor_total,status_item_mercado,print_url,status_pedido,ultima_mensagem,nao_lidas,atualizado_em&order=atualizado_em.desc");
    const atendimentos=rows.map(({cliente_nome,ultima_mensagem,...row})=>({...row,nome_do_cliente:cliente_nome,"última_mensagem":ultima_mensagem}));
    const selected=url.searchParams.get("atendimento_id");
-   if(selected){const rawMsgs=await db(env,"mensagens?select=id,atendimento_id,remetente,texto,criado_em&atendimento_id=eq."+encodeURIComponent(selected)+"&order=criado_em.asc");const msgs=rawMsgs.map(({remetente,...m})=>({...m,referente:remetente}));return json({atendimento:atendimentos.find(x=>x.id===selected)||null,mensagens:msgs})}
+   if(selected){
+    const rawMsgs=await db(env,"mensagens?select=id,atendimento_id,remetente,texto,criado_em&atendimento_id=eq."+encodeURIComponent(selected)+"&order=criado_em.asc");
+    const msgs=rawMsgs.map(({remetente,...m})=>({...m,referente:remetente}));
+    return json({atendimento:atendimentos.find(x=>x.id===selected)||null,mensagens:msgs});
+   }
    return json({atendimentos});
   }
   if(request.method==="GET"){
    let token=cookieValue(request,COOKIE),setCookie="";
-   if(!token){token=b64(crypto.getRandomValues(new Uint8Array(32)));const hash=await digest(token);const id="AFR-"+crypto.randomUUID();await db(env,"atendimentos",{method:"POST",body:JSON.stringify({id,cliente_nome:"Visitante MIR4",status_pedido:"chat_ativo",nao_lidas:0,token_hash:hash})});setCookie=sessionCookie(token)}
-   const hash=await digest(token),found=await db(env,"atendimentos?select=id,cliente_nome,servidor,pacote,valor_total,status_pedido&id=not.is.null&token_hash=eq."+encodeURIComponent(hash));
+   if(!token){
+    token=b64(crypto.getRandomValues(new Uint8Array(32)));
+    const hash=await digest(token),id="AFR-"+crypto.randomUUID();
+    await db(env,"atendimentos",{method:"POST",body:JSON.stringify({id,cliente_nome:"Visitante MIR4",status_pedido:"chat_ativo",nao_lidas:0,token_hash:hash})});
+    setCookie=sessionCookie(token);
+   }
+   const hash=await digest(token);
+   const found=await db(env,"atendimentos?select=id,cliente_nome,servidor,pacote,valor_total,status_pedido,status_item_mercado&id=not.is.null&token_hash=eq."+encodeURIComponent(hash));
    if(!found.length)return json({error:"Sessão de atendimento inválida."},401);
-   const rawMsgs=await db(env,"mensagens?select=id,remetente,texto,criado_em&atendimento_id=eq."+encodeURIComponent(found[0].id)+"&order=criado_em.asc");const msgs=rawMsgs.map(({remetente,...m})=>({...m,referente:remetente}));
+   const rawMsgs=await db(env,"mensagens?select=id,remetente,texto,criado_em&atendimento_id=eq."+encodeURIComponent(found[0].id)+"&order=criado_em.asc");
+   const msgs=rawMsgs.map(({remetente,...m})=>({...m,referente:remetente}));
    return json({atendimento:found[0],mensagens:msgs},200,setCookie?{"Set-Cookie":setCookie}:{});
   }
+  if(request.method==="PATCH"){
+   if(!await adminValid(request,env))return json({error:"Acesso administrativo não autorizado."},401);
+   const body=await request.json().catch(()=>null);
+   const atendimentoId=String(body?.atendimento_id||"").trim();
+   const nextStatus=String(body?.status_pedido||"").trim();
+   const allowed=["pendente","pago","em_andamento","entregue"];
+   if(!atendimentoId||!allowed.includes(nextStatus))return json({error:"Informe um pedido e um status válido."},400);
+   const rows=await db(env,"atendimentos?select=id,status_pedido,cliente_nome&id=eq."+encodeURIComponent(atendimentoId));
+   if(!rows.length)return json({error:"Pedido não encontrado."},404);
+   const current=String(rows[0].status_pedido||"chat_ativo");
+   const paidStates=["pago","em_andamento","entregue"];
+   if((nextStatus==="em_andamento"||nextStatus==="entregue"||nextStatus==="pago")&&!paidStates.includes(current)){
+    return json({error:"Este pedido ainda não possui pagamento confirmado pela InfinitePay."},409);
+   }
+   if(nextStatus==="pendente"&&paidStates.includes(current)){
+    return json({error:"Um pedido pago não pode voltar para pendente."},409);
+   }
+   if(nextStatus===current)return json({ok:true,status_pedido:current,unchanged:true});
+   const now=new Date().toISOString();
+   await db(env,"atendimentos?id=eq."+encodeURIComponent(atendimentoId),{method:"PATCH",body:JSON.stringify({status_pedido:nextStatus,atualizado_em:now,nao_lidas:1})});
+   const labels={pendente:"Pendente",pago:"Pagamento confirmado",em_andamento:"Em andamento",entregue:"Entregue"};
+   const text="Atualização do seu pedido: "+labels[nextStatus]+".";
+   await db(env,"mensagens",{method:"POST",body:JSON.stringify({atendimento_id:atendimentoId,remetente:"atendente",texto:text})});
+   return json({ok:true,status_pedido:nextStatus});
+  }
   if(request.method==="POST"){
-   const body=await request.json().catch(()=>null);if(!body||typeof body.text!=="string"||!body.text.trim()||body.text.length>2000)return json({error:"Mensagem inválida."},400);
+   const body=await request.json().catch(()=>null);
+   if(!body||typeof body.text!=="string"||!body.text.trim()||body.text.length>2000)return json({error:"Mensagem inválida."},400);
    const text=body.text.trim();let atendimentoId,referente;
    if(body.admin===true){
     if(!await adminValid(request,env))return json({error:"Acesso administrativo não autorizado."},401);
@@ -74,22 +111,37 @@ export async function onRequest(context){
    const patch={ultima_mensagem:text,atualizado_em:now};
    if(referente==="cliente")patch.nao_lidas=1;
    if(referente==="cliente"&&body.order_complete===true){
+    const orderId=String(body.order_id||"").trim();
+    if(!/^AFR-[0-9a-f-]{36}$/i.test(orderId))return json({error:"Identificador do pedido inválido."},400);
+    const paymentRows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens&order_nsu=eq."+encodeURIComponent(orderId));
+    if(!paymentRows.length)return json({error:"Não encontramos o pagamento deste pedido."},409);
+    const payment=paymentRows[0],details=payment.itens||{};
+    if(payment.status!=="pago")return json({error:"A InfinitePay ainda não confirmou este pagamento. O pedido não foi enviado."},409);
+    if(String(details.atendimento_id||"")!==atendimentoId)return json({error:"Este pagamento não pertence a este atendimento."},403);
+    const expectedTotal=Number(details.paid_amount||payment.total_centavos);
+    const submittedTotal=Math.round(Number(body.valor_total)*100);
+    const expectedPackages=(details.items||[]).map(item=>String(item.name)+" x "+Number(item.quantity)).join(", ");
+    if(!Number.isFinite(submittedTotal)||submittedTotal!==expectedTotal||String(body.servidor||"")!==String(details.server||"")||String(body.pacote||"")!==expectedPackages){
+     return json({error:"Os dados do pedido não correspondem ao pagamento confirmado. Atualize a página e tente novamente."},409);
+    }
+    const currentOrder=await db(env,"atendimentos?select=id,print_url&id=eq."+encodeURIComponent(atendimentoId));
+    if(!currentOrder.length)return json({error:"Atendimento não encontrado."},404);
+    if(currentOrder[0].print_url)return json({error:"Este pedido já foi enviado. Não é necessário enviá-lo novamente."},409);
     const printUrl=String(body.print_url||"");
-    if(!printUrl.startsWith("data:image/")||printUrl.length>3000000)return json({error:"O print enviado é inválido ou excede o limite permitido."},400);
-    patch.servidor=String(body.servidor||"").slice(0,80);
-    patch.pacote=String(body.pacote||"").slice(0,300);
-    patch.valor_total=Number(body.valor_total);
+    if(!/^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(printUrl)||printUrl.length>3000000)return json({error:"O print enviado é inválido ou excede o limite permitido."},400);
+    patch.servidor=String(details.server).slice(0,80);
+    patch.pacote=expectedPackages.slice(0,300);
+    patch.valor_total=expectedTotal/100;
     patch.status_item_mercado=String(body.status_item_mercado||"").slice(0,100);
     patch.print_url=printUrl;
     patch.status_pedido="pago";
    }
    await db(env,"atendimentos?id=eq."+encodeURIComponent(atendimentoId),{method:"PATCH",body:JSON.stringify(patch)});
-   const inserted=await db(env,"mensagens",{method:"POST",body:JSON.stringify({atendimento_id:atendimentoId,remetente:referente,texto:text})});
+   const inserted=await db(env,"mensagens",{method:"POST",body:JSON.stringify({atendimento_id:atendimentoId,remetente:referente,texto})});
    const mensagem=inserted?.[0]?(({remetente,...m})=>({...m,referente:remetente}))(inserted[0]):null;
    if(referente==="cliente"){
     const alertText="🔔 Novo atendimento/mensagem no site Afrodite MIR4! Acesse o Painel Admin para responder e entregar.";
-    if(typeof context.waitUntil==="function")context.waitUntil(sendWhatsappAlert(env,alertText));
-    else await sendWhatsappAlert(env,alertText);
+    if(typeof context.waitUntil==="function")context.waitUntil(sendWhatsappAlert(env,alertText));else await sendWhatsappAlert(env,alertText);
     const tipo=body.order_complete===true?"novo_pedido":"mensagem";
     let shouldNotifyTelegram=true;
     if(tipo==="mensagem"){
