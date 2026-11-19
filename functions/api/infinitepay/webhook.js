@@ -19,7 +19,7 @@ export async function onRequest({request,env}) {
     const rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens&order_nsu=eq."+encodeURIComponent(order));
     if(!rows?.length) return json({received:true,ignored:true});
     if(rows[0].status==="pago") return json({received:true,already_paid:true});
-    const response=await fetch("https://api.checkout.infinitepay.io/payment_check",{
+    const response=await fetch("https://api.infinitepay.io/invoices/public/checkout/payment_check",{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({handle:HANDLE,order_nsu:order,transaction_nsu:transaction,slug})
     });
