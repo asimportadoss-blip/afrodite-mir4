@@ -756,7 +756,7 @@ async function handleInfinitePayReturn(){
   if(!response.ok||data.paid!==true)throw new Error(data.error||'O pagamento ainda não foi confirmado. Aguarde alguns instantes e fale com o atendimento se já pagou.');
   cart=(data.items||[]).map(item=>({name:item.name,price:Number(item.price_centavos)/100,qty:Number(item.quantity)}));
   if(!cart.length||!['SA1','NA1'].includes(data.server))throw new Error('Pagamento confirmado, mas não foi possível recuperar os dados do pedido. Fale com o atendimento.');
-  el('cartServer').value=data.server;renderCart();paymentConfirmed=true;paymentMethod='card';
+  el('cartServer').value=data.server;renderCart();el('cardTotalValue').textContent=money(grandTotal());paymentConfirmed=true;paymentMethod='card';
   el('cardPaymentStatus').textContent='✓ Pagamento com cartão confirmado pela InfinitePay.';document.querySelector('#pane2 .warning').textContent='Pagamento confirmado pela InfinitePay. A equipe verificará o status do anúncio antes de liberar a entrega.';
   el('stepTab1').classList.remove('active');el('stepTab2').classList.add('active');
   goStep(2);showToast('Pagamento confirmado! Envie o print para concluir o pedido.');
