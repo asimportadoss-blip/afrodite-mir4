@@ -123,15 +123,36 @@ export async function onRequest(context){
    if(referente==="cliente"&&body.order_complete===true){
     const orderId=String(body.order_id||"").trim();
     if(!orderId)return json({error:"Identificador do pedido não informado."},400);
-    const paymentRows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens&order_nsu=eq."+encodeURIComponent(orderId));
-    if(!paymentRows.length)return json({error:"Não encontramos o pagamento deste pedido."},409);
-    const payment=paymentRows[0],details=payment.itens||{};
-    if(payment.status!=="pago")return json({error:"A InfinitePay ainda não confirmou este pagamento. O pedido não foi enviado."},409);
-    if(String(details.atendimento_id||"")!==atendimentoId)return json({error:"Este pagamento não pertence a este atendimento."},403);
-    const expectedTotal=Number(details.paid_amount||payment.total_centavos);
+    let paymentRows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&order_nsu=eq."+encodeURIComponent(orderId));
+    let payment=paymentRows[0]||null,details=payment?.itens||{};
     const submittedTotal=Math.round(Number(body.valor_total)*100);
+    const transactionNsu=String(body.transaction_nsu||body.transaction_id||"").trim();
+    const invoiceSlug=String(body.slug||"").trim();
+    // O frontend já liberou a Etapa 02 após confirmar. Se o registro ainda estiver pendente,
+    // revalidamos diretamente na InfinitePay em vez de bloquear por divergência de sincronização.
+    if(!payment||payment.status!=="pago"){
+     const sent={handle:"amanda-roberta-wt8",order_nsu:orderId,transaction_nsu:transactionNsu,slug:invoiceSlug};
+     const providerResponse=await fetch("https://api.infinitepay.io/invoices/public/checkout/payment_check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sent)});
+     const providerRaw=await providerResponse.text();let provider;try{provider=providerRaw?JSON.parse(providerRaw):null}catch{provider={raw_response:providerRaw}}
+     const providerPaid=provider?.paid===true||Number(provider?.paid_amount)>0;
+     const providerAmount=Number(provider?.amount||provider?.paid_amount||0);
+     if(!providerResponse.ok||!providerPaid)return json({error:"A InfinitePay ainda não confirmou este pagamento. O pedido não foi enviado."},409);
+     if(!Number.isFinite(submittedTotal)||submittedTotal<=0||(providerAmount>0&&submittedTotal!==providerAmount))return json({error:"O valor enviado não corresponde à confirmação da InfinitePay."},409);
+     if(payment){
+      details={...details,paid_amount:Number(provider.paid_amount||provider.amount||0),capture_method:provider.capture_method||details.capture_method,installments:provider.installments||details.installments};
+      await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(orderId),{method:"PATCH",body:JSON.stringify({status:"pago",transaction_nsu:transactionNsu||payment.transaction_nsu||null,invoice_slug:invoiceSlug||payment.invoice_slug||null,confirmado_em:new Date().toISOString(),itens:details})});
+      payment={...payment,status:"pago",itens:details};
+     }else{
+      details={server:String(body.servidor||""),atendimento_id:atendimentoId,paid_amount:Number(provider.paid_amount||provider.amount||0),items:[]};
+     }
+    }
+    if(payment&&String(details.atendimento_id||"")!==atendimentoId)return json({error:"Este pagamento não pertence a este atendimento."},403);
+    const expectedTotal=Number(details.paid_amount||payment?.total_centavos||submittedTotal);
     const expectedPackages=(details.items||[]).map(item=>String(item.name)+" x "+Number(item.quantity)).join(", ");
-    if(!Number.isFinite(submittedTotal)||submittedTotal!==expectedTotal||String(body.servidor||"")!==String(details.server||"")||String(body.pacote||"")!==expectedPackages){
+    if(!Number.isFinite(submittedTotal)||submittedTotal<=0||submittedTotal!==expectedTotal&&payment?.status==="pago"||String(body.servidor||"").trim()===""||!String(body.pacote||"").trim()){
+     return json({error:"Os dados do pedido não correspondem ao pagamento confirmado. Atualize a página e tente novamente."},409);
+    }
+    if(expectedPackages&&String(body.pacote||"")!==expectedPackages||details.server&&String(body.servidor||"")!==String(details.server||"")){
      return json({error:"Os dados do pedido não correspondem ao pagamento confirmado. Atualize a página e tente novamente."},409);
     }
     const currentOrder=await db(env,"atendimentos?select=id&id=eq."+encodeURIComponent(atendimentoId));
