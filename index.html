@@ -853,29 +853,36 @@ function getOrders(){try{return JSON.parse(localStorage.getItem(DB_KEY)||'[]')}c
 function saveOrders(a){localStorage.setItem(DB_KEY,JSON.stringify(a));if(firebaseEnabled)firebaseDb.ref('afrodite/orders').set(a).catch(()=>showToast('Não foi possível sincronizar os pedidos.'));window.dispatchEvent(new Event('storeUpdated'))}
 function getChat(){try{return JSON.parse(localStorage.getItem(CHAT_KEY)||'[]')}catch(e){return []}}
 function saveChat(a){localStorage.setItem(CHAT_KEY,JSON.stringify(a));if(firebaseEnabled)firebaseDb.ref('afrodite/chat').set(a).catch(()=>showToast('Não foi possível sincronizar o atendimento.'));window.dispatchEvent(new Event('storeUpdated'))}
-function notifySeller(order){
- const packages=order.items.map(x=>x.name+' x '+x.qty).join(', ');
- const paymentNote=order.paymentStatus==='Cartão confirmado pela InfinitePay'?'Pagamento com cartão confirmado pela InfinitePay.':'Pagamento informado pelo cliente; conferir o crédito no banco antes da entrega.';
- const message='NOVO PEDIDO AFRODITE MIR4\nPedido: '+order.id+'\nPacote comprado: '+packages+'\nValor total: '+money(order.total)+'\nServidor: '+order.server+'\nStatus do item no mercado: '+(order.marketStatus||'não informado')+'\nPrint anexado no Painel Atendente.\n'+paymentNote;
- const url='https://wa.me/'+SELLER_WHATSAPP+'?text='+encodeURIComponent(message);
- window.open(url,'_blank','noopener,noreferrer');
-}
-function submitOrder(){
+
+async function submitOrder(){
  if(!cart.length){showToast('Sua sacola está vazia.');return}
  if(!paymentConfirmed){showToast('Confirme o pagamento antes de enviar o pedido.');return}
  const server=el('cartServer').value.trim(),market=document.querySelector('input[name="marketStatus"]:checked');
  if(!server||!selectedFile||!market){showToast('Anexe o print e informe se o item já está disponível no mercado.');return}
- const baseTotal=cartTotal(),cardFee=paymentMethod==='card'&&cardPaymentDetails?Math.max(0,(cardPaymentDetails.paidAmount-cardPaymentDetails.amount)/100):0;
- const order={id:'AFR-'+Date.now().toString().slice(-8),date:Date.now(),items:cart.map(x=>({...x})),subtotal:baseTotal,fee:cardFee,total:cardPaymentDetails?cardPaymentDetails.paidAmount/100:baseTotal,installments:cardPaymentDetails?.installments||null,nickname:'',server,item:'Anúncio no Mercado MIR4',proof:selectedFile,pixReceipt:null,marketStatus:market.value,paymentStatus:paymentMethod==='card'?'Cartão confirmado pela InfinitePay':'PIX confirmado pela InfinitePay',status:'Pedido recebido — aguardando conferência do anúncio'};
+ const pending=(()=>{try{return JSON.parse(localStorage.getItem('pedido_pendente')||'null')}catch{return null}})();
+ const atendimentoId=pending?.atendimento_id||chatSession?.id;
+ if(!atendimentoId){showToast('Não foi possível localizar seu atendimento. Atualize a página e tente novamente.');return}
+ const items=cart.map(x=>({...x}));
+ const subtotal=Number(pending?.total||cartTotal());
+ const total=cardPaymentDetails?Number(cardPaymentDetails.paidAmount||cardPaymentDetails.amount)/100:subtotal;
+ const orderId=pending?.order_nsu||atendimentoId;
+ const order={id:orderId,date:Date.now(),items,subtotal,total,server,proof:selectedFile,marketStatus:market.value,paymentStatus:'Pagamento aprovado automaticamente via InfinitePay.'};
+ const packages=items.map(x=>x.name+' x '+x.qty).join(', ');
+ const summary='NOVO PEDIDO AFRODITE MIR4\nPedido: '+order.id+'\nPacote comprado: '+packages+'\nValor total: '+money(total)+'\nServidor: '+server+'\nStatus do item no mercado: '+market.value+'\nPrint anexado no Painel Atendente.\nPagamento aprovado automaticamente via InfinitePay.';
+ const submitButton=document.querySelector('#pane2 button[type="submit"],#pane2 .gold-btn');
+ if(submitButton){submitButton.disabled=true;submitButton.textContent='ENVIANDO PEDIDO...'}
  try{
+  if(!chatSession)await loadCustomerChat();
+  await chatApi('/api/chat',{method:'POST',body:JSON.stringify({order_complete:true,atendimento_id:atendimentoId,order_id:order.id,servidor:server,pacote:packages,valor_total:total,status_item_mercado:market.value,print_url:selectedFile.data,text:summary})});
   const all=getOrders();all.unshift(order);saveOrders(all);
-  const customerMessage='Seu pedido '+order.id+' foi recebido. O pagamento via '+(paymentMethod==='card'?'cartão':'PIX')+' foi confirmado pela InfinitePay. Nossa equipe vai conferir o status do anúncio no Mercado MIR4. Situação informada: '+order.marketStatus+'.';
-  const msgs=getChat();msgs.push({from:'seller',text:customerMessage,time:Date.now(),orderId:order.id});saveChat(msgs);notifySeller(order);
-  el('orderSuccess').textContent='✓ Pedido '+order.id+' recebido! O pagamento foi confirmado pela InfinitePay. A equipe verificará o anúncio antes de liberar a entrega.';
-  el('orderSuccess').classList.add('show');openChat();renderChat();
+  el('orderSuccess').textContent='✓ Pedido '+order.id+' recebido! Acompanhe a conferência e a entrega pelo chat interno.';
+  el('orderSuccess').classList.add('show');
+  openChat();await loadCustomerChat();
   localStorage.removeItem('pedido_pendente');localStorage.removeItem('afrodite_infinitepay_order_nsu');localStorage.removeItem('afrodite_cart_pending');
   cart=[];renderCart();selectedFile=null;paymentConfirmed=false;el('printFile').value='';el('preview').style.display='none';document.querySelectorAll('input[name="marketStatus"]').forEach(x=>x.checked=false);
- }catch(e){showToast('Não foi possível registrar o pedido. Tente uma imagem menor.')}
+  showToast('Pedido enviado ao Painel Admin pelo chat interno.');
+ }catch(error){showToast(error.message||'Não foi possível registrar o pedido. Tente novamente.')}
+ finally{if(submitButton){submitButton.disabled=false;submitButton.textContent='ENVIAR PEDIDO'}}
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 let chatSession=null,chatLoading=false,chatPollStarted=false,adminChats=[];
@@ -906,7 +913,7 @@ function closeAdmin(){window.location.href='/'}
 function loginAdmin(){const form=el('adminPassword');if(form)form.value='';}
 async function refreshAdminChats(){if(!admAuthenticated)return;try{const data=await chatApi('/api/chat?admin=1');adminChats=data.atendimentos||[];renderAdmin();if(admSelectedOrder)await renderAdminChat()}catch(e){console.warn('Falha ao atualizar conversas:',e.message)}}
 function renderAdmin(){if(!admAuthenticated)return;const orders=getOrders(),total=orders.reduce((sum,o)=>sum+Number(o.total||0),0);el('admOrdersCount').textContent=orders.length;el('admChatsCount').textContent=adminChats.length;el('admSalesTotal').textContent=money(total);const list=el('admContacts');list.innerHTML='';el('admContactCount').textContent=adminChats.length;if(!adminChats.length){list.innerHTML='<p class="adm-empty">Nenhum cliente por enquanto.</p>';el('admWelcome').hidden=false;el('admSelected').hidden=true;return}adminChats.forEach(c=>{const b=document.createElement('button');b.type='button';b.className='adm-contact'+(admSelectedOrder===c.id?' active':'');const name=c.nome_do_cliente||'Visitante MIR4';const avatar=document.createElement('span');avatar.className='adm-contact-avatar';avatar.textContent=name.charAt(0).toUpperCase();const main=document.createElement('span');main.className='adm-contact-main';const line=document.createElement('span');line.className='adm-contact-line';const title=document.createElement('b');title.textContent=name;const time=document.createElement('small');time.textContent=c.atualizado_em?new Date(c.atualizado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';line.append(title,time);const sub=document.createElement('span');sub.className='adm-contact-sub';const preview=document.createElement('span');preview.textContent=c['última_mensagem']||'Atendimento iniciado';const price=document.createElement('span');price.textContent=c.valor_total?money(c.valor_total):'Chat';sub.append(preview,price);main.append(line,sub);b.append(avatar,main);if(Number(c.nao_lidas)>0){const dot=document.createElement('i');dot.className='adm-unread';b.append(dot)}b.onclick=()=>selectAdminContact(c.id);list.append(b)});if(!admSelectedOrder||!adminChats.some(c=>c.id===admSelectedOrder))selectAdminContact(adminChats[0].id,false)}
-async function selectAdminContact(id,rerender=true){admSelectedOrder=id;const c=adminChats.find(x=>x.id===id)||{};el('admWelcome').hidden=true;el('admSelected').hidden=false;el('admCustomerName').textContent=c.nome_do_cliente||'Visitante MIR4';el('admCustomerMeta').textContent='Atendimento '+id;el('admAvatar').textContent=(el('admCustomerName').textContent||'C').charAt(0).toUpperCase();const data=el('admOrderData');data.innerHTML='';const fields=[['Servidor',c.servidor||'—'],['Pacote',c.pacote||'—'],['Total',c.valor_total?money(c.valor_total):'—'],['Status',c.status_pedido||'Atendimento ativo']];fields.forEach(([k,v])=>{const span=document.createElement('span');span.innerHTML='<b>'+escapeHtml(k)+':</b> '+escapeHtml(v);data.append(span)});el('admOpenPrint').hidden=true;if(rerender){document.querySelectorAll('.adm-contact').forEach(b=>b.classList.remove('active'));}await renderAdminChat()}
+async function selectAdminContact(id,rerender=true){admSelectedOrder=id;const c=adminChats.find(x=>x.id===id)||{};el('admWelcome').hidden=true;el('admSelected').hidden=false;el('admCustomerName').textContent=c.nome_do_cliente||'Visitante MIR4';el('admCustomerMeta').textContent='Atendimento '+id;el('admAvatar').textContent=(el('admCustomerName').textContent||'C').charAt(0).toUpperCase();const data=el('admOrderData');data.innerHTML='';const fields=[['Servidor',c.servidor||'—'],['Pacote',c.pacote||'—'],['Total',c.valor_total?money(c.valor_total):'—'],['Status do item',c.status_item_mercado||'—'],['Status',c.status_pedido||'Atendimento ativo']];fields.forEach(([k,v])=>{const span=document.createElement('span');span.innerHTML='<b>'+escapeHtml(k)+':</b> '+escapeHtml(v);data.append(span)});const printButton=el('admOpenPrint');printButton.hidden=!c.print_url;printButton.onclick=()=>{el('admLargePrint').src=c.print_url;el('admImageViewer').hidden=false};if(rerender){document.querySelectorAll('.adm-contact').forEach(b=>b.classList.remove('active'));}await renderAdminChat()}
 async function renderAdminChat(){if(!admAuthenticated||!admSelectedOrder)return;const box=el('admMessages');try{const data=await chatApi('/api/chat?admin=1&atendimento_id='+encodeURIComponent(admSelectedOrder));const msgs=(data.mensagens||[]).map(m=>({from:m.referente==='atendente'?'seller':'buyer',text:m.texto,time:m.criado_em}));box.innerHTML='';if(!msgs.length){box.innerHTML='<p class="adm-empty">Nenhuma mensagem nesta conversa ainda.</p>';return}msgs.forEach(m=>{const b=document.createElement('div');b.className='adm-message '+(m.from==='seller'?'outgoing':'');b.textContent=m.text;const time=document.createElement('time');time.textContent=new Date(m.time||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});b.append(time);box.append(b)});box.scrollTop=box.scrollHeight}catch(e){box.textContent=e.message}}
 async function replyChat(){const input=el('admReplyInput'),text=input.value.trim();if(!text||!admSelectedOrder)return;try{await chatApi('/api/chat',{method:'POST',body:JSON.stringify({admin:true,atendimento_id:admSelectedOrder,text})});input.value='';await renderAdminChat();await refreshAdminChats()}catch(e){showToast(e.message)}}
 
