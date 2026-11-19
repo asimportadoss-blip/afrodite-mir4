@@ -14,7 +14,8 @@ export async function onRequest({request,env}) {
     const order=String(event.order_nsu||"");
     const transaction=String(event.transaction_nsu||"");
     const slug=String(event.invoice_slug||event.slug||"");
-    if(!/^AFR-[0-9a-f-]{36}$/i.test(order) || !transaction || !slug) return json({received:true,ignored:true});
+    console.log("InfinitePay webhook received",{fields:Object.keys(event||{}),has_order:!!order,has_transaction:!!transaction,has_slug:!!slug});
+    if(!/^AFR-[0-9a-f-]{36}$/i.test(order) || !transaction || !slug) { console.error("InfinitePay webhook ignored: required identifiers missing",{has_order:!!order,has_transaction:!!transaction,has_slug:!!slug}); return json({received:true,ignored:true,reason:"missing_identifiers"}); }
     const rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens&order_nsu=eq."+encodeURIComponent(order));
     if(!rows?.length) return json({received:true,ignored:true});
     if(rows[0].status==="pago") return json({received:true,already_paid:true});
@@ -23,7 +24,7 @@ export async function onRequest({request,env}) {
       body:JSON.stringify({handle:HANDLE,order_nsu:order,transaction_nsu:transaction,slug})
     });
     const result=await response.json().catch(()=>null);
-    if(!response.ok || result?.success!==true || result?.paid!==true) return json({received:true,confirmed:false});
+    if(!response.ok || result?.success!==true || result?.paid!==true) { console.error("InfinitePay webhook payment_check not confirmed",{http_status:response.status,success:result?.success??null,paid:result?.paid??null,response_fields:result&&typeof result==="object"?Object.keys(result):[]}); return json({received:true,confirmed:false}); }
     const method=result.capture_method;
     const installments=method==="credit_card"?Number(result.installments):null;
     if(Number(result.amount)!==Number(rows[0].total_centavos) || !["credit_card","pix"].includes(method) || (method==="credit_card" && (!Number.isInteger(installments)||installments<1||installments>12))) return json({received:true,confirmed:false});
@@ -33,6 +34,7 @@ export async function onRequest({request,env}) {
     });
     return json({received:true,confirmed:true});
   } catch(error) {
+    console.error("InfinitePay webhook internal error",{message:error?.message||"unknown"});
     return json({error:"Não foi possível processar a notificação."},500);
   }
 }
