@@ -21,7 +21,7 @@ export async function onRequest({request,env}) {
     if(rows[0].status==="pago") { console.log("InfinitePay check: order already confirmed by webhook"); return json({paid:true,server:rows[0].itens?.server,items:rows[0].itens?.items||[],capture_method:rows[0].itens?.capture_method||null,installments:rows[0].itens?.installments||null,amount:rows[0].total_centavos,paid_amount:rows[0].itens?.paid_amount||rows[0].total_centavos}); }
     transaction=transaction||String(rows[0].transaction_nsu||"");
     slug=slug||String(rows[0].invoice_slug||"");
-    if(!transaction || !slug) { console.error("InfinitePay check missing return identifiers",{has_transaction:!!transaction,has_slug:!!slug,db_has_transaction:!!rows[0].transaction_nsu,db_has_slug:!!rows[0].invoice_slug}); return json({paid:false,pending:true,error:"O retorno da InfinitePay chegou sem o identificador da transação ou da cobrança. A notificação automática ainda não confirmou este pedido."},409); }
+    if(!transaction || !slug) { console.error("InfinitePay check missing return identifiers",{has_transaction:!!transaction,has_slug:!!slug,db_has_transaction:!!rows[0].transaction_nsu,db_has_slug:!!rows[0].invoice_slug}); return json({paid:false,pending:true,server:rows[0].itens?.server,items:rows[0].itens?.items||[],amount:rows[0].total_centavos,error:"O pedido foi localizado, mas a InfinitePay ainda não forneceu os dados necessários para validar a transação. Aguardando confirmação automática."},409); }
     const response=await fetch("https://api.checkout.infinitepay.io/payment_check",{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({handle:HANDLE,order_nsu:order,transaction_nsu:transaction,slug})
