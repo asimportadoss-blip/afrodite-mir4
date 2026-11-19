@@ -23,22 +23,24 @@ export async function onRequest({request,env}) {
     transaction=transaction||String(rows[0].transaction_nsu||"");
     slug=slug||String(rows[0].invoice_slug||"");
     if(!transaction || !slug) { console.error("InfinitePay check missing return identifiers",{has_transaction:!!transaction,has_slug:!!slug,db_has_transaction:!!rows[0].transaction_nsu,db_has_slug:!!rows[0].invoice_slug}); return json({paid:false,pending:true,server:rows[0].itens?.server,items:rows[0].itens?.items||[],amount:rows[0].total_centavos,atendimento:atendimentoRows[0]||null,error:"O pedido foi localizado, mas a InfinitePay ainda não forneceu os dados necessários para validar a transação. Aguardando confirmação automática."},409); }
+    const sent={handle:HANDLE,order_nsu:order,transaction_nsu:transaction,slug};
     const response=await fetch("https://api.infinitepay.io/invoices/public/checkout/payment_check",{
-      method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({handle:HANDLE,order_nsu:order,transaction_nsu:transaction,slug})
+      method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sent)
     });
-    const result=await response.json().catch(()=>null);
+    const rawResponse=await response.text();
+    let result=null;try{result=rawResponse?JSON.parse(rawResponse):null}catch{result={raw_response:rawResponse};}
+    const diagnostic={enviado:sent,resposta_http:response.status,resposta:result};
     if(!response.ok) {
-      console.error("InfinitePay payment_check HTTP error",{http_status:response.status,response_fields:result&&typeof result==="object"?Object.keys(result):[]});
-      return json({paid:false,pending:true,error:"A InfinitePay respondeu com erro HTTP "+response.status+" ao consultar o pagamento. Tente consultar novamente."},502);
+      console.error("InfinitePay payment_check HTTP error",diagnostic);
+      return json({paid:false,pending:true,error:"A InfinitePay respondeu HTTP "+response.status+".",diagnostic},502);
     }
     if(result?.success!==true) {
-      console.error("InfinitePay payment_check unsuccessful",{success:result?.success??null,paid:result?.paid??null,response_fields:result&&typeof result==="object"?Object.keys(result):[]});
-      return json({paid:false,pending:true,error:"A InfinitePay não validou a consulta (success diferente de true). Confira os dados de retorno e tente novamente."},502);
+      console.error("InfinitePay payment_check unsuccessful",diagnostic);
+      return json({paid:false,pending:true,error:"A InfinitePay não validou a consulta (success diferente de true).",diagnostic},502);
     }
     if(result?.paid!==true) {
-      console.log("InfinitePay payment_check pending",{success:result.success,paid:result.paid});
-      return json({paid:false,pending:true,error:"A InfinitePay respondeu que este pedido ainda não consta como pago (paid diferente de true)."},409);
+      console.log("InfinitePay payment_check pending",diagnostic);
+      return json({paid:false,pending:true,error:"A InfinitePay respondeu que este pedido ainda não consta como pago (paid diferente de true).",diagnostic},409);
     }
     const method=result.capture_method;
     const installments=method==="credit_card"?Number(result.installments):null;
