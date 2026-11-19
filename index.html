@@ -848,7 +848,7 @@ async function retryInfinitePayConfirmation(){
  const button=el('cardPayButton');button.disabled=true;
  if(infinitePayPollTimer){clearInterval(infinitePayPollTimer);infinitePayPollTimer=null;}
  try{await verifyInfinitePayReturn(10)}
- catch(error){el('cardPaymentStatus').textContent=error.message;if(error.message.includes('Diagnóstico enviado/recebido:'))el('cardPaymentStatus').style.whiteSpace='pre-wrap';button.disabled=false;button.textContent='CONSULTAR PAGAMENTO NOVAMENTE';startInfinitePayStatusPolling();showToast(error.message)}
+ catch(error){el('cardPaymentStatus').textContent=error.message;button.disabled=false;button.textContent='CONSULTAR PAGAMENTO NOVAMENTE';startInfinitePayStatusPolling();showToast(error.message)}
 }
 async function handleInfinitePayReturn(){
  const params=new URLSearchParams(window.location.search);
