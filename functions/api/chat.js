@@ -169,8 +169,8 @@ export async function onRequest(context){
      const claim=await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(orderId)+"&status=eq.pago&itens->>pedido_enviado_em=is.null",{method:"PATCH",body:JSON.stringify({itens:{...details,pedido_enviado_em:now}})});
      if(!claim.length)return json({error:"Este pedido já está sendo enviado ou foi concluído anteriormente."},409);
     }
-    patch.servidor=String(details.server).slice(0,80);
-    patch.pacote=expectedPackages.slice(0,300);
+    patch.servidor=String(details.server||body.servidor||"").slice(0,80);
+    patch.pacote=String(expectedPackages||body.pacote||"").slice(0,300);
     patch.valor_total=expectedTotal/100;
     patch.status_item_mercado=String(body.status_item_mercado||"").slice(0,100);
     patch.print_url=printUrl;
