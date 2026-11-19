@@ -31,7 +31,7 @@ export async function onRequest({request, env}) {
   try {
     if (!env.INFINITEPAY_API_KEY) return json({error:"A integração de cartão ainda não está configurada."},503);
     const body = await request.json();
-    if (!Array.isArray(body.items) || !body.items.length || !["SA1","NA1"].includes(body.server)) return json({error:"Pedido inválido."},400);
+    if (!Array.isArray(body.items) || !body.items.length || !["SA1","NA1","INMENA1"].includes(body.server)) return json({error:"Pedido inválido."},400);
     const items = [];
     let total = 0;
     for (const item of body.items) {
