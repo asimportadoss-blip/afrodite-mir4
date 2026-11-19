@@ -178,11 +178,18 @@ export async function onRequest(context){
    }
    let inserted;
    try{
-    await db(env,"atendimentos?id=eq."+encodeURIComponent(atendimentoId),{method:"PATCH",body:JSON.stringify(patch)});
-    const messageRows=referente==="cliente"&&body.order_complete===true
-     ? [{atendimento_id:atendimentoId,remetente:referente,texto:text},{atendimento_id:atendimentoId,remetente:referente,texto:"PRINT_URL:"+patch.print_url,criado_em:new Date(Date.now()+1).toISOString()}]
-     : {atendimento_id:atendimentoId,remetente:referente,texto};
-    inserted=await db(env,"mensagens",{method:"POST",body:JSON.stringify(messageRows)});
+    if(referente==="cliente"&&body.order_complete===true){
+     // Upsert de um único objeto: preserva os demais campos e evita "All object keys must match".
+     await db(env,"atendimentos?on_conflict=id",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=representation"},body:JSON.stringify({id:atendimentoId,...patch})});
+     // A tabela mensagens tem quatro colunas. Inserimos cada mensagem separadamente,
+     // sempre com o mesmo conjunto de chaves, para evitar incompatibilidade no array.
+     const firstMessage={atendimento_id:atendimentoId,remetente:referente,texto:text,criado_em:now};
+     inserted=await db(env,"mensagens",{method:"POST",body:JSON.stringify(firstMessage)});
+     await db(env,"mensagens",{method:"POST",body:JSON.stringify({atendimento_id:atendimentoId,remetente:referente,texto:"PRINT_URL:"+patch.print_url,criado_em:new Date(Date.now()+1).toISOString()})});
+    }else{
+     await db(env,"atendimentos?id=eq."+encodeURIComponent(atendimentoId),{method:"PATCH",body:JSON.stringify(patch)});
+     inserted=await db(env,"mensagens",{method:"POST",body:JSON.stringify({atendimento_id:atendimentoId,remetente:referente,texto,criado_em:now})});
+    }
    }catch(error){
     if(referente==="cliente"&&body.order_complete===true){
      const orderId=String(body.order_id||"");
