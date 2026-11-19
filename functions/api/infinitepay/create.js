@@ -79,6 +79,10 @@ export async function onRequest({request, env}) {
       console.error("InfinitePay link creation failed", {status:response.status, responseFields:data && typeof data === "object" ? Object.keys(data) : [], reason});
       return json({error:reason},502);
     }
+    if(row.itens.atendimento_id){
+      const packages=items.map(item=>item.name+" x "+item.quantity).join(", ");
+      await supabase(env,"atendimentos?id=eq."+encodeURIComponent(row.itens.atendimento_id),{method:"PATCH",body:JSON.stringify({status_pedido:"pendente",servidor:body.server,pacote:packages,valor_total:total/100,atualizado_em:new Date().toISOString()})}).catch(error=>console.error("Could not mark attendance as pending",{message:error?.message||"unknown"}));
+    }
     return json({url:checkoutUrl.href,order_nsu});
   } catch (error) {
     if (row?.order_nsu) await supabase(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(row.order_nsu),{method:"PATCH",body:JSON.stringify({status:"erro"})}).catch(()=>{});
