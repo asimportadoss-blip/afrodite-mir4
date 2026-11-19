@@ -91,6 +91,10 @@ export async function onRequest(context){
    if(nextStatus==="pendente"&&paidStates.includes(current)){
     return json({error:"Um pedido pago não pode voltar para pendente."},409);
    }
+   if(nextStatus==="pendente"&&current!=="pendente"){
+    const pendingPayment=await db(env,"pagamentos_infinitepay?select=order_nsu&status=eq.pendente&itens->>atendimento_id=eq."+encodeURIComponent(atendimentoId)+"&limit=1");
+    if(!pendingPayment.length)return json({error:"Não existe pagamento pendente vinculado a este atendimento."},409);
+   }
    if(nextStatus===current)return json({ok:true,status_pedido:current,unchanged:true});
    const now=new Date().toISOString();
    await db(env,"atendimentos?id=eq."+encodeURIComponent(atendimentoId),{method:"PATCH",body:JSON.stringify({status_pedido:nextStatus,atualizado_em:now,nao_lidas:1})});
