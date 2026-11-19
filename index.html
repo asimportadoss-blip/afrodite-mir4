@@ -937,7 +937,16 @@ async function initAdminRoute(){
 function openAdmin(){window.location.href='/adm'}
 function closeAdmin(){window.location.href='/'}
 function loginAdmin(){const form=el('adminPassword');if(form)form.value='';}
-async function refreshAdminChats(){if(!admAuthenticated)return;try{const data=await chatApi('/api/chat?admin=1');adminChats=data.atendimentos||[];renderAdmin();if(admSelectedOrder)await renderAdminChat()}catch(e){console.warn('Falha ao atualizar conversas:',e.message)}}
+async function refreshAdminChats(){
+ if(!admAuthenticated)return;
+ try{
+  const data=await chatApi("/api/chat?admin=1");
+  adminChats=data.atendimentos||[];
+  renderAdmin();
+  if(admSelectedOrder&&adminChats.some(c=>c.id===admSelectedOrder))await selectAdminContact(admSelectedOrder,false);
+  else if(admSelectedOrder)admSelectedOrder=null;
+ }catch(e){console.warn("Falha ao atualizar conversas:",e.message)}
+}
 let admStatusFilter="todos";
 function setAdminStatusFilter(value){admStatusFilter=["todos","pendentes","pagos","entregues"].includes(value)?value:"todos";renderAdmin()}
 function adminStatusLabel(status){return ({chat_ativo:"Atendimento iniciado",pendente:"Pendente",pago:"Pagamento confirmado",em_andamento:"Em andamento",entregue:"Entregue"})[status]||"Atendimento ativo"}
