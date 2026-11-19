@@ -27,6 +27,16 @@ async function sendWhatsappAlert(env,message){
   return true;
  }catch(error){console.error("WhatsApp alert failed",{message:error?.message||"unknown"});return false}
 }
+async function sendTelegramAlert(env,payload,context){
+ const token=String(env.TELEGRAM_BOT_TOKEN||"").trim(),chatId=String(env.TELEGRAM_CHAT_ID||"").trim();
+ if(!token||!chatId)return;
+ const tipo=payload.tipo==="novo_pedido"?"novo_pedido":"mensagem";
+ const text=tipo==="novo_pedido"
+  ? "🔔 NOVO PEDIDO PAGO - AFRODITE MIR4\\nPedido: "+(payload.pedido_id||"—")+"\\nPacote: "+(payload.pacote||"—")+"\\nValor: "+(payload.valor_total||"—")+"\\nServidor: "+(payload.servidor||"—")+"\\nAcesse o Painel Admin para entregar!"
+  : "💬 NOVA MENSAGEM NO CHAT - AFRODITE MIR4\\nCliente: "+(payload.cliente_nome||"Cliente")+"\\nMensagem: \\""+String(payload.mensagem||"").slice(0,1000)+"\\"\\nAcesse o Painel Admin para responder!";
+ const task=(async()=>{try{const response=await fetch("https://api.telegram.org/bot"+token+"/sendMessage",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id:chatId,text})});if(!response.ok)console.error("Telegram notification failed",{status:response.status,body:(await response.text()).slice(0,300)});}catch(error){console.error("Telegram notification error",{message:error?.message||"unknown"})}})();
+ if(typeof context.waitUntil==="function")context.waitUntil(task);else await task;
+}
 function fail(e){return json({error:e.message||"Erro interno."},500)}
 export async function onRequest(context){
  const {request,env}=context;
@@ -81,6 +91,18 @@ export async function onRequest(context){
     const alertText="🔔 Novo atendimento/mensagem no site Afrodite MIR4! Acesse o Painel Admin para responder e entregar.";
     if(typeof context.waitUntil==="function")context.waitUntil(sendWhatsappAlert(env,alertText));
     else await sendWhatsappAlert(env,alertText);
+    const tipo=body.order_complete===true?"novo_pedido":"mensagem";
+    let shouldNotifyTelegram=true;
+    if(tipo==="mensagem"){
+     const throttleKey="telegram_chat_alert:"+atendimentoId;
+     try{
+      const previous=Number(await env.AFRODITE_KV?.get(throttleKey)||0);
+      if(Date.now()-previous<120000)shouldNotifyTelegram=false;
+      else if(env.AFRODITE_KV)await env.AFRODITE_KV.put(throttleKey,String(Date.now()),{expirationTtl:300});
+      else {console.warn("AFRODITE_KV missing: chat Telegram throttle unavailable");shouldNotifyTelegram=false;}
+     }catch(error){console.error("Telegram throttle failed",{message:error?.message||"unknown"});shouldNotifyTelegram=false;}
+    }
+    if(shouldNotifyTelegram)await sendTelegramAlert(env,{tipo,pedido_id:body.order_id||atendimentoId,cliente_nome:body.cliente_nome||"Cliente Afrodite",servidor:body.servidor||"",pacote:body.pacote||"",valor_total:body.valor_total?Number(body.valor_total).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"",mensagem:text},context);
    }
    return json({ok:true,mensagem,order_saved:referente==="cliente"&&body.order_complete===true});
   }
