@@ -1,62 +1,62 @@
-const HANDLE = "amanda-roberta-wt8";
+const DEFAULT_HANDLE = "amanda-roberta-wt8";
 const json = (data,status=200) => new Response(JSON.stringify(data),{status,headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
 async function db(env,path,options={}) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("Banco de dados não configurado.");
-  const r=await fetch(env.SUPABASE_URL+"/rest/v1/"+path,{...options,headers:{apikey:env.SUPABASE_SERVICE_ROLE_KEY,Authorization:"Bearer "+env.SUPABASE_SERVICE_ROLE_KEY,"Content-Type":"application/json",Prefer:"return=representation",...(options.headers||{})}});
-  const raw=await r.text(); let data; try{data=raw?JSON.parse(raw):null}catch{data=raw}
-  if(!r.ok) throw new Error("Falha ao consultar o pedido.");
+  const response=await fetch(env.SUPABASE_URL+"/rest/v1/"+path,{...options,headers:{apikey:env.SUPABASE_SERVICE_ROLE_KEY,Authorization:"Bearer "+env.SUPABASE_SERVICE_ROLE_KEY,"Content-Type":"application/json",Prefer:"return=representation",...(options.headers||{})}});
+  const raw=await response.text();let data;try{data=raw?JSON.parse(raw):null}catch{data=raw}
+  if(!response.ok) throw new Error("Supabase HTTP "+response.status+": "+String(raw).slice(0,400));
   return data;
 }
 export async function onRequest({request,env}) {
   if(request.method!=="POST") return json({error:"Método não permitido."},405);
   try {
     const body=await request.json();
-    const order=String(body.order_nsu||body.pedido_id||"");
-    let transaction=String(body.transaction_nsu||"");
-    let slug=String(body.slug||"");
-    console.log("InfinitePay check request received",{has_order:!!order,has_transaction:!!transaction,has_slug:!!slug});
-    if(!/^AFR-[0-9a-f-]{36}$/i.test(order)) { console.error("InfinitePay check missing or invalid order_nsu"); return json({error:"Não recebemos o identificador do pedido no retorno da InfinitePay."},400); }
-    const rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&order_nsu=eq."+encodeURIComponent(order));
-    if(!rows?.length) return json({error:"Pedido não encontrado."},404);
-    const atendimentoRows=rows[0].itens?.atendimento_id?await db(env,"atendimentos?select=id,servidor,pacote,valor_total,status_pedido&id=eq."+encodeURIComponent(rows[0].itens.atendimento_id)).catch(()=>[]):[];
-    if(rows[0].status==="pago" || atendimentoRows[0]?.status_pedido==="pago") { await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(order),{method:"PATCH",body:JSON.stringify({status:"pago",confirmado_em:new Date().toISOString()})}); if(rows[0].itens?.atendimento_id) await db(env,"atendimentos?id=eq."+encodeURIComponent(rows[0].itens.atendimento_id),{method:"PATCH",body:JSON.stringify({status_pedido:"pago",atualizado_em:new Date().toISOString()})}); console.log("InfinitePay check: order already confirmed in Supabase"); return json({paid:true,server:rows[0].itens?.server||atendimentoRows[0]?.servidor,items:rows[0].itens?.items||[],capture_method:rows[0].itens?.capture_method||null,installments:rows[0].itens?.installments||null,amount:rows[0].total_centavos,paid_amount:rows[0].itens?.paid_amount||rows[0].total_centavos,atendimento:atendimentoRows[0]||null}); }
-    transaction=transaction||String(rows[0].transaction_nsu||"");
-    slug=slug||String(rows[0].invoice_slug||"");
-    if(!transaction || !slug) { const sent={handle:HANDLE,order_nsu:order,transaction_nsu:transaction,slug}; const diagnostic={enviado:sent,resposta_http:null,resposta:{consulta_nao_enviada:true,motivo:!transaction&&!slug?"transaction_nsu e slug ausentes":!transaction?"transaction_nsu ausente":"slug ausente",dados_salvos_no_banco:{transaction_nsu:!!rows[0].transaction_nsu,slug:!!rows[0].invoice_slug}}}; console.error("InfinitePay check missing return identifiers",diagnostic); return json({paid:false,pending:true,server:rows[0].itens?.server,items:rows[0].itens?.items||[],amount:rows[0].total_centavos,atendimento:atendimentoRows[0]||null,error:"O pedido foi localizado, mas faltam identificadores para consultar a InfinitePay.",diagnostic},409); }
-    const sent={handle:HANDLE,order_nsu:order,transaction_nsu:transaction,slug};
+    const orderNsu=String(body.order_nsu||body.pedido_id||body.pedidoId||body.id||"").trim();
+    const transactionNsu=String(body.transaction_nsu||body.transaction_id||body.transactionId||"").trim();
+    const slug=String(body.slug||"").trim();
+    const handle=String(body.handle||env.INFINITEPAY_HANDLE||DEFAULT_HANDLE).replace(/^\$/,"").trim();
+    if(!orderNsu&&!transactionNsu) {
+      return json({error:"Informe order_nsu ou transaction_nsu.",received_fields:Object.keys(body||{})},400);
+    }
+    const sent={handle,order_nsu:orderNsu||undefined,transaction_nsu:transactionNsu||undefined,slug:slug||undefined};
+    console.log("InfinitePay check received",{has_order:!!orderNsu,has_transaction:!!transactionNsu,has_slug:!!slug,handle});
+    let rows=[];
+    if(orderNsu) rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&order_nsu=eq."+encodeURIComponent(orderNsu));
+    if(!rows.length&&transactionNsu) rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&transaction_nsu=eq."+encodeURIComponent(transactionNsu));
+    if(!rows.length) return json({error:"Pedido não encontrado no registro de pagamentos.",diagnostic:{enviado:sent}},404);
+    const payment=rows[0];
+    const canonicalOrder=String(payment.order_nsu||orderNsu||"");
+    const finalTransaction=transactionNsu||String(payment.transaction_nsu||"");
+    const finalSlug=slug||String(payment.invoice_slug||"");
+    const atendimentoId=payment.itens?.atendimento_id||null;
+    const atendimentoRows=atendimentoId?await db(env,"atendimentos?select=id,servidor,pacote,valor_total,status_pedido&id=eq."+encodeURIComponent(atendimentoId)).catch(()=>[]):[];
+    if(payment.status==="pago"||atendimentoRows[0]?.status_pedido==="pago") {
+      if(payment.status!=="pago") await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(canonicalOrder),{method:"PATCH",body:JSON.stringify({status:"pago",confirmado_em:new Date().toISOString()})});
+      return json({paid:true,order_nsu:canonicalOrder,server:payment.itens?.server||atendimentoRows[0]?.servidor,items:payment.itens?.items||[],amount:payment.total_centavos,atendimento:atendimentoRows[0]||null});
+    }
+    const requestBody={handle,order_nsu:canonicalOrder,transaction_nsu:finalTransaction,slug:finalSlug};
     const response=await fetch("https://api.infinitepay.io/invoices/public/checkout/payment_check",{
-      method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sent)
+      method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(requestBody)
     });
-    const rawResponse=await response.text();
-    let result=null;try{result=rawResponse?JSON.parse(rawResponse):null}catch{result={raw_response:rawResponse};}
-    const diagnostic={enviado:sent,resposta_http:response.status,resposta:result};
-    if(!response.ok) {
-      console.error("InfinitePay payment_check HTTP error",diagnostic);
-      return json({paid:false,pending:true,error:"A InfinitePay respondeu HTTP "+response.status+".",diagnostic},502);
-    }
-    if(result?.success!==true) {
-      console.error("InfinitePay payment_check unsuccessful",diagnostic);
-      return json({paid:false,pending:true,error:"A InfinitePay não validou a consulta (success diferente de true).",diagnostic},502);
-    }
-    if(result?.paid!==true) {
-      console.log("InfinitePay payment_check pending",diagnostic);
-      return json({paid:false,pending:true,error:"A InfinitePay respondeu que este pedido ainda não consta como pago (paid diferente de true).",diagnostic},409);
-    }
+    const raw=await response.text();let result;try{result=raw?JSON.parse(raw):null}catch{result={raw_response:raw};}
+    const diagnostic={enviado:requestBody,resposta_http:response.status,resposta:result};
+    console.log("InfinitePay payment_check result",{http_status:response.status,success:result?.success??null,paid:result?.paid??null,has_order:!!canonicalOrder,has_transaction:!!finalTransaction,has_slug:!!finalSlug});
+    if(!response.ok) return json({paid:false,pending:true,error:"A InfinitePay respondeu HTTP "+response.status+".",diagnostic},502);
+    // success=true confirma que a consulta foi processada; somente paid=true comprova pagamento.
+    if(result?.paid!==true) return json({paid:false,pending:true,error:"A InfinitePay ainda não confirmou o pagamento (paid diferente de true).",diagnostic},409);
     const method=result.capture_method;
     const installments=method==="credit_card"?Number(result.installments):null;
     const receivedAmount=Number(result.amount);
-    const expectedAmount=Number(rows[0].total_centavos);
-    if(receivedAmount!==expectedAmount || !["credit_card","pix"].includes(method) || (method==="credit_card" && (!Number.isInteger(installments) || installments<1 || installments>12))) {
-      console.error("InfinitePay payment_check validation mismatch",{expected_amount:expectedAmount,received_amount:Number.isFinite(receivedAmount)?receivedAmount:null,capture_method:method??null,installments:Number.isFinite(installments)?installments:null});
-      return json({paid:false,pending:true,error:"A InfinitePay confirmou a transação, mas os dados não conferem: valor esperado R$ "+(expectedAmount/100).toFixed(2).replace(".",",")+", valor informado "+(Number.isFinite(receivedAmount)?"R$ "+(receivedAmount/100).toFixed(2).replace(".",","):"inválido")+", método "+String(method||"não informado")+". O pedido ficou bloqueado por segurança."},409);
+    const expectedAmount=Number(payment.total_centavos);
+    if(receivedAmount!==expectedAmount||!["credit_card","pix"].includes(method)||(method==="credit_card"&&(!Number.isInteger(installments)||installments<1||installments>12))) {
+      return json({paid:false,pending:true,error:"A InfinitePay confirmou uma transação, mas valor ou método não conferem. O pedido permanece bloqueado.",diagnostic:{...diagnostic,valor_esperado_centavos:expectedAmount,valor_recebido_centavos:Number.isFinite(receivedAmount)?receivedAmount:null}},409);
     }
-    await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(order),{
-      method:"PATCH",body:JSON.stringify({status:"pago",transaction_nsu:transaction,invoice_slug:slug,confirmado_em:new Date().toISOString(),itens:{...rows[0].itens,capture_method:method,installments,paid_amount:Number(result.paid_amount||result.amount)}})
-    });
-    if(rows[0].itens?.atendimento_id) await db(env,"atendimentos?id=eq."+encodeURIComponent(rows[0].itens.atendimento_id),{method:"PATCH",body:JSON.stringify({status_pedido:"pago",servidor:rows[0].itens.server,pacote:(rows[0].itens.items||[]).map(x=>x.name+" x "+x.quantity).join(", "),valor_total:Number(result.paid_amount||result.amount)/100,atualizado_em:new Date().toISOString()})});
-    return json({paid:true,server:rows[0].itens?.server||atendimentoRows[0]?.servidor,items:rows[0].itens?.items||[],capture_method:method,installments,amount:Number(result.amount),paid_amount:Number(result.paid_amount||result.amount),atendimento:atendimentoRows[0]||null});
+    const now=new Date().toISOString();
+    await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(canonicalOrder),{method:"PATCH",body:JSON.stringify({status:"pago",transaction_nsu:finalTransaction,invoice_slug:finalSlug,confirmado_em:now,itens:{...payment.itens,capture_method:method,installments,paid_amount:Number(result.paid_amount||result.amount)}})});
+    if(atendimentoId) await db(env,"atendimentos?id=eq."+encodeURIComponent(atendimentoId),{method:"PATCH",body:JSON.stringify({status_pedido:"pago",servidor:payment.itens?.server,pacote:(payment.itens?.items||[]).map(x=>x.name+" x "+x.quantity).join(", "),valor_total:Number(result.paid_amount||result.amount)/100,atualizado_em:now})});
+    return json({paid:true,order_nsu:canonicalOrder,server:payment.itens?.server,items:payment.itens?.items||[],capture_method:method,installments,amount:receivedAmount,paid_amount:Number(result.paid_amount||result.amount)});
   } catch(error) {
     console.error("InfinitePay check internal error",{message:error?.message||"unknown"});
-    return json({error:"Não foi possível confirmar o pagamento agora. Atualize a página em instantes."},500);
+    return json({error:"Não foi possível confirmar o pagamento agora."},500);
   }
 }
