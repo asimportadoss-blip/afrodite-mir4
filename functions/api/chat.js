@@ -28,7 +28,8 @@ async function sendWhatsappAlert(env,message){
  }catch(error){console.error("WhatsApp alert failed",{message:error?.message||"unknown"});return false}
 }
 function fail(e){return json({error:e.message||"Erro interno."},500)}
-export async function onRequest({request,env}){
+export async function onRequest(context){
+ const {request,env}=context;
  try{
   const url=new URL(request.url),admin=url.searchParams.get("admin")==="1";
   if(request.method==="GET"&&admin){
@@ -78,7 +79,8 @@ export async function onRequest({request,env}){
    const mensagem=inserted?.[0]?(({remetente,...m})=>({...m,referente:remetente}))(inserted[0]):null;
    if(referente==="cliente"){
     const alertText="🔔 Novo atendimento/mensagem no site Afrodite MIR4! Acesse o Painel Admin para responder e entregar.";
-    await sendWhatsappAlert(env,alertText);
+    if(typeof context.waitUntil==="function")context.waitUntil(sendWhatsappAlert(env,alertText));
+    else await sendWhatsappAlert(env,alertText);
    }
    return json({ok:true,mensagem,order_saved:referente==="cliente"&&body.order_complete===true});
   }
