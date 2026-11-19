@@ -68,7 +68,7 @@ export async function onRequest({request, env}) {
       try { checkoutUrl = new URL(data.url); }
       catch { urlProblem = "O campo url retornado não contém um endereço válido."; }
     }
-    const validUrl = checkoutUrl && checkoutUrl.protocol === "https:" && checkoutUrl.hostname === "checkout.infinitepay.com.br";
+    const validUrl = checkoutUrl && checkoutUrl.protocol === "https:" && ["checkout.infinitepay.com.br","checkout.infinitepay.io"].includes(checkoutUrl.hostname);
     if (!response.ok || !validUrl) {
       await supabase(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(order_nsu),{method:"PATCH",body:JSON.stringify({status:"erro"})}).catch(()=>{});
       const providerMessage = [data?.message, data?.error, data?.detail].find(value => typeof value === "string" && value.trim());
