@@ -769,7 +769,7 @@ function renderChat(){if(chatSession)loadCustomerChat()}
 function renderBubbles(box,msgs){box.innerHTML='';if(!msgs.length){box.textContent='Nenhuma mensagem ainda.';return}msgs.forEach(m=>{const b=document.createElement('div');b.className='bubble '+(m.from==='buyer'?'me':'');b.textContent=m.text;box.appendChild(b)});box.scrollTop=box.scrollHeight}
 
 let admAuthenticated=false,admSelectedOrder=null;
-function isAdminRoute(){return window.location.pathname.replace(/\\/+$/,'')==='/adm'||window.location.hash==='#adm'}
+function isAdminRoute(){return window.location.pathname.replace(/\/+$/,'')==='/adm'||window.location.hash==='#adm'}
 async function initAdminRoute(){
  if(!isAdminRoute())return;
  document.body.classList.add('admin-route');
