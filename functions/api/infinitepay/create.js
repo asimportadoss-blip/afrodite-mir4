@@ -45,7 +45,7 @@ export async function onRequest({request, env}) {
     if (!Number.isSafeInteger(total) || total < 1 || total > 10000000) return json({error:"Valor do pedido inválido."},400);
     const order_nsu = "AFR-" + crypto.randomUUID();
     const origin = new URL(request.url).origin;
-    row = {order_nsu,total_centavos:total,itens:items.map(x=>({name:x.name,quantity:x.quantity,price_centavos:x.price})),status:"pendente"};
+    row = {order_nsu,total_centavos:total,itens:{server:body.server,items:items.map(x=>({name:x.name,quantity:x.quantity,price_centavos:x.price}))},status:"pendente"};
     await supabase(env,"pagamentos_infinitepay",{method:"POST",body:JSON.stringify(row)});
     const payload = {
       handle: HANDLE,
