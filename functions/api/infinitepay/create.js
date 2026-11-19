@@ -32,7 +32,7 @@ export async function onRequest({request, env}) {
     if (!env.INFINITEPAY_API_KEY) return json({error:"A integração de cartão ainda não está configurada."},503);
     const body = await request.json();
     const atendimento_id = String(body.atendimento_id || "").trim();
-    if (!/^AFR-[0-9a-f-]{36}$/i.test(atendimento_id)) return json({error:"Não foi possível vincular o pagamento ao seu atendimento. Atualize a página e tente novamente."},400);
+    if (!atendimento_id) return json({error:"Não foi possível vincular o pagamento ao seu atendimento. Atualize a página e tente novamente."},400);
     if (!Array.isArray(body.items) || !body.items.length || !["SA1","NA1","INMENA1"].includes(body.server)) return json({error:"Pedido inválido."},400);
     const attendance = await supabase(env,"atendimentos?select=id&id=eq."+encodeURIComponent(atendimento_id));
     if (!attendance.length) return json({error:"Atendimento não encontrado. Atualize a página e tente novamente."},404);
@@ -55,7 +55,7 @@ export async function onRequest({request, env}) {
       handle: HANDLE,
       items: items.map(x=>({quantity:x.quantity,price:x.price,description:x.name+" — Servidor "+body.server})),
       order_nsu,
-      redirect_url: "https://afrodite-mir4.pages.dev/checkout/retorno",
+      redirect_url: "https://afrodite-mir4.pages.dev/checkout/retorno?order_nsu="+encodeURIComponent(order_nsu)+"&pedido_id="+encodeURIComponent(order_nsu),
       webhook_url: "https://afrodite-mir4.pages.dev/api/infinitepay-webhook",
       options: { payment_methods_enabled:["pix"], assured_installments:0, require_delivery_address:false }
     };
