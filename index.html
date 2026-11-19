@@ -787,10 +787,16 @@ async function verifyInfinitePayReturn(attempts=10){
    if(!cart.length&&Array.isArray(data.items)&&data.items.length){cart=data.items.map(item=>({name:item.name,price:Number(item.price_centavos)/100,qty:Number(item.quantity)}));if(data.server&&el('cartServer'))el('cartServer').value=data.server;renderCart();el('pixTotalValue').textContent=money(grandTotal());}
    if(response.ok&&data.paid===true){
     if(infinitePayPollTimer){clearInterval(infinitePayPollTimer);infinitePayPollTimer=null;}
-    cart=(data.items||[]).map(item=>({name:item.name,price:Number(item.price_centavos)/100,qty:Number(item.quantity)}));
-    cardPaymentDetails={installments:data.capture_method==='credit_card'?Number(data.installments):null,amount:Number(data.amount),paidAmount:Number(data.paid_amount||data.amount)};
-    if(!cart.length||!['SA1','NA1'].includes(data.server))throw new Error('Pagamento confirmado, mas não foi possível recuperar os dados do pedido. Fale com o atendimento.');
-    el('cartServer').value=data.server;renderCart();el('pixTotalValue').textContent=money(grandTotal());paymentConfirmed=true;paymentMethod=data.capture_method==='credit_card'?'card':'pix';
+    const pendingOrder=(()=>{try{return JSON.parse(localStorage.getItem('pedido_pendente')||'null')}catch{return null}})();
+    const storedCart=(()=>{try{return JSON.parse(localStorage.getItem('afrodite_cart_pending')||'[]')}catch{return []}})();
+    if(!cart.length&&Array.isArray(pendingOrder?.items)&&pendingOrder.items.length)cart=pendingOrder.items.map(x=>({...x}));
+    if(!cart.length&&Array.isArray(storedCart)&&storedCart.length)cart=storedCart.map(x=>({...x}));
+    if(Array.isArray(data.items)&&data.items.length)cart=data.items.map(item=>({name:item.name,price:Number(item.price_centavos)/100,qty:Number(item.quantity)}));
+    const restoredServer=data.server||pendingOrder?.server||'';
+    if(restoredServer&&el('cartServer'))el('cartServer').value=restoredServer;
+    if(cart.length){renderCart();el('pixTotalValue').textContent=money(grandTotal());}
+    cardPaymentDetails={installments:data.capture_method==='credit_card'?Number(data.installments):null,amount:Number(data.amount||0),paidAmount:Number(data.paid_amount||data.amount||0)};
+    paymentConfirmed=true;paymentMethod=data.capture_method==='credit_card'?'card':'pix';
     el('cardPaymentStatus').textContent='✓ Pagamento via '+(paymentMethod==='card'?'cartão':'PIX')+' confirmado pela InfinitePay.';
     document.querySelector('#pane2 .warning').textContent='Pagamento confirmado pela InfinitePay. A equipe verificará o status do anúncio antes de liberar a entrega.';
     el('stepTab1').classList.remove('active');el('stepTab2').classList.add('active');
@@ -838,7 +844,7 @@ async function handleInfinitePayReturn(){
  }
 }
 function closeCheckout(){el('checkout').classList.remove('checkout-open');}
-function goStep(n){if(!cart.length){showToast('Adicione um pacote antes de finalizar.');showPage('cart');return}if(n===2&&!paymentConfirmed){showToast('Confirme o pagamento para liberar o envio do print.');return}currentStep=n;[1,2].forEach(i=>{el('pane'+i).classList.toggle('active',i===n);el('stepTab'+i).classList.toggle('active',i===n)});if(n===2)el('orderSuccess').classList.remove('show')}
+function goStep(n){if(!cart.length&&!(n===2&&paymentConfirmed)){showToast('Adicione um pacote antes de finalizar.');showPage('cart');return}if(n===2&&!paymentConfirmed){showToast('Confirme o pagamento para liberar o envio do print.');return}currentStep=n;[1,2].forEach(i=>{el('pane'+i).classList.toggle('active',i===n);el('stepTab'+i).classList.toggle('active',i===n)});if(n===2)el('orderSuccess').classList.remove('show')}
 function showExample(){showToast('Exemplo: print do MIR4 mostrando o item, o preço em ouro e o status do anúncio.')}
 function readImageInput(input,callback){const file=input.files&&input.files[0];if(!file){callback(null);return}if(!file.type.startsWith('image/')){showToast('Selecione um arquivo de imagem.');input.value='';callback(null);return}if(file.size>2*1024*1024){showToast('A imagem deve ter no máximo 2 MB.');input.value='';callback(null);return}const reader=new FileReader();reader.onload=()=>callback({name:file.name,type:file.type,data:reader.result});reader.onerror=()=>{showToast('Não foi possível ler a imagem.');callback(null)};reader.readAsDataURL(file)}
 el('printFile').addEventListener('change',e=>{readImageInput(e.target,file=>{selectedFile=file;el('preview').style.display='none';if(file){el('preview').src=file.data;el('preview').style.display='block'}})});
