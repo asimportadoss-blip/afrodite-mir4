@@ -18,6 +18,15 @@ async function adminValid(request,env){
 function headers(env){return {apikey:env.SUPABASE_SERVICE_ROLE_KEY,Authorization:"Bearer "+env.SUPABASE_SERVICE_ROLE_KEY,"Content-Type":"application/json",Prefer:"return=representation"}}
 async function db(env,path,options={}){if(!env.SUPABASE_URL||!env.SUPABASE_SERVICE_ROLE_KEY)throw new Error("Supabase não configurado no servidor.");const r=await fetch(env.SUPABASE_URL+"/rest/v1/"+path,{...options,headers:{...headers(env),...(options.headers||{})}});const t=await r.text();let data;try{data=t?JSON.parse(t):null}catch{data=t}if(!r.ok)throw new Error(typeof data==="object"?(data.message||data.details||"Falha no Supabase."):String(data));return data}
 function sessionCookie(token){return COOKIE+"="+encodeURIComponent(token)+"; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000"}
+async function sendWhatsappAlert(env,message){
+ const target=String(env.WHATSAPP_ALERT_URL||"").trim(),phone=String(env.WHATSAPP_PHONE||"").trim();
+ if(!target||!phone){console.log("WhatsApp alert not configured");return false}
+ try{
+  const response=await fetch(target,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone,message})});
+  if(!response.ok){console.error("WhatsApp alert HTTP error",{status:response.status});return false}
+  return true;
+ }catch(error){console.error("WhatsApp alert failed",{message:error?.message||"unknown"});return false}
+}
 function fail(e){return json({error:e.message||"Erro interno."},500)}
 export async function onRequest({request,env}){
  try{
@@ -51,11 +60,27 @@ export async function onRequest({request,env}){
     if(!found.length)return json({error:"Sessão de atendimento inválida."},403);
     atendimentoId=found[0].id;referente="cliente";
    }
-   const inserted=await db(env,"mensagens",{method:"POST",body:JSON.stringify({atendimento_id:atendimentoId,remetente:referente,texto:text})});
-   const patch={ultima_mensagem:text,atualizado_em:new Date().toISOString()};
+   const now=new Date().toISOString();
+   const patch={ultima_mensagem:text,atualizado_em:now};
    if(referente==="cliente")patch.nao_lidas=1;
+   if(referente==="cliente"&&body.order_complete===true){
+    const printUrl=String(body.print_url||"");
+    if(!printUrl.startsWith("data:image/")||printUrl.length>3000000)return json({error:"O print enviado é inválido ou excede o limite permitido."},400);
+    patch.servidor=String(body.servidor||"").slice(0,80);
+    patch.pacote=String(body.pacote||"").slice(0,300);
+    patch.valor_total=Number(body.valor_total);
+    patch.status_item_mercado=String(body.status_item_mercado||"").slice(0,100);
+    patch.print_url=printUrl;
+    patch.status_pedido="pago";
+   }
    await db(env,"atendimentos?id=eq."+encodeURIComponent(atendimentoId),{method:"PATCH",body:JSON.stringify(patch)});
-   const mensagem=inserted?.[0]?(({remetente,...m})=>({...m,referente:remetente}))(inserted[0]):null;return json({ok:true,mensagem});
+   const inserted=await db(env,"mensagens",{method:"POST",body:JSON.stringify({atendimento_id:atendimentoId,remetente:referente,texto:text})});
+   const mensagem=inserted?.[0]?(({remetente,...m})=>({...m,referente:remetente}))(inserted[0]):null;
+   if(referente==="cliente"){
+    const alertText="🔔 Novo atendimento/mensagem no site Afrodite MIR4! Acesse o Painel Admin para responder e entregar.";
+    await sendWhatsappAlert(env,alertText);
+   }
+   return json({ok:true,mensagem,order_saved:referente==="cliente"&&body.order_complete===true});
   }
   return json({error:"Método não permitido."},405);
  }catch(e){return fail(e)}
