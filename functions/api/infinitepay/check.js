@@ -22,8 +22,14 @@ export async function onRequest({request,env}) {
     console.log("InfinitePay check received",{has_order:!!orderNsu,has_transaction:!!transactionNsu,has_slug:!!slug,handle});
     let rows=[];
     if(orderNsu) rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&order_nsu=eq."+encodeURIComponent(orderNsu));
+    // O frontend também pode receber o UUID do atendimento; nesse caso, localize o pagamento pelo vínculo salvo no JSON itens.
+    if(!rows.length&&orderNsu) rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&itens->>atendimento_id=eq."+encodeURIComponent(orderNsu));
     if(!rows.length&&transactionNsu) rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&transaction_nsu=eq."+encodeURIComponent(transactionNsu));
-    if(!rows.length) return json({error:"Pedido não encontrado no registro de pagamentos.",diagnostic:{enviado:sent}},404);
+    if(!rows.length) {
+      const atendimento=orderNsu?await db(env,"atendimentos?select=id,status_pedido&id=eq."+encodeURIComponent(orderNsu)).catch(()=>[]):[];
+      if(atendimento[0]?.status_pedido==="pago") return json({paid:true,order_nsu:orderNsu});
+      return json({error:"Pedido não encontrado no registro de pagamentos.",diagnostic:{enviado:sent,order_nsu_recebido:orderNsu,transaction_nsu_recebido:transactionNsu}},404);
+    }
     const payment=rows[0];
     const canonicalOrder=String(payment.order_nsu||orderNsu||"");
     const finalTransaction=transactionNsu||String(payment.transaction_nsu||"");
@@ -34,7 +40,8 @@ export async function onRequest({request,env}) {
       if(payment.status!=="pago") await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(canonicalOrder),{method:"PATCH",body:JSON.stringify({status:"pago",confirmado_em:new Date().toISOString()})});
       return json({paid:true,order_nsu:canonicalOrder,server:payment.itens?.server||atendimentoRows[0]?.servidor,items:payment.itens?.items||[],amount:payment.total_centavos,atendimento:atendimentoRows[0]||null});
     }
-    const requestBody={handle,order_nsu:canonicalOrder,transaction_nsu:finalTransaction,slug:finalSlug};
+    const requestBody={handle,order_nsu:canonicalOrder||orderNsu,transaction_nsu:finalTransaction||transactionNsu,slug:finalSlug||slug};
+    await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(canonicalOrder),{method:"PATCH",body:JSON.stringify({transaction_nsu:finalTransaction||null,invoice_slug:finalSlug||null})}).catch(error=>console.error("Não foi possível persistir os identificadores do retorno",{message:error?.message}));
     const response=await fetch("https://api.infinitepay.io/invoices/public/checkout/payment_check",{
       method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(requestBody)
     });
