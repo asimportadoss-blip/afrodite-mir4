@@ -678,8 +678,9 @@ body.admin-route>header,body.admin-route>main:not(#adminApp),body.admin-route>fo
 <section id="cartPage" class="subpage" style="display:none"><div class="wrap subpage-wrap"><div class="subpage-heading"><button class="outline-btn" onclick="showPage('home')">← Continuar comprando</button><h1>Minha Sacola</h1><p>Confira os pacotes, escolha seu servidor e veja o valor final.</p></div><div class="panel cart-page-panel"><div id="cartPageItems" class="cart-page-items"><div class="empty">Sua sacola está vazia.</div></div><div class="field cart-server"><label for="cartServer">Servidor</label><select id="cartServer"><option value="">Selecione seu servidor</option><option value="SA1">SA1</option><option value="NA1">NA1</option></select></div><div class="cart-calculation"><div><span>Subtotal</span><strong id="cartSubtotal">R$ 0,00</strong></div><div class="grand-total"><span>Total</span><strong id="cartGrandTotal">R$ 0,00</strong></div></div><button class="gold-btn full" id="cartProceed" onclick="startCheckout()">Finalizar Pedido →</button></div></div></section>
 <section id="checkout" style="display:none"><div class="wrap"><div class="checkout-top"><button class="outline-btn" onclick="showPage('cart')">← Voltar à Sacola</button></div><div class="checkout-shell"><div class="checkout-head"><h2>Finalizar Compra</h2><p>Complete as etapas para solicitar a entrega pelo Mercado do MIR4.</p></div>
 <div class="order-summary"><h3>Resumo do pedido</h3><div id="cartLines"><div class="empty">Sua sacola está vazia.</div></div><div class="basket-total"><span>Total</span><span id="cartTotal">R$ 0,00</span></div></div>
-<div class="steps"><div class="step active" id="stepTab1"><b>01</b>Pagamento via Pix</div><div class="step" id="stepTab2"><b>02</b>Envio do Print</div></div>
-<div class="step-pane active" id="pane1"><div class="pix-layout"><div><div class="qr-box" id="pixQr" aria-label="QR Code PIX para pagamento"></div><div class="qr-caption">QR CODE PIX • VALOR TOTAL</div></div><div class="pix-info"><h3>Etapa 1 — Pagamento via Pix</h3><p>Escaneie o QR Code ou copie o código abaixo. Confira o valor total antes de pagar.</p><div class="pix-total-value" id="pixTotalValue">R$ 0,00</div><div class="field"><label>Chave Pix (Copia e Cola)</label><textarea id="pixPayload" readonly rows="4" style="width:100%;padding:11px;background:#080809;border:1px solid #705323;color:#ffe2a0;overflow-wrap:anywhere"></textarea></div><div class="pix-key"><button class="outline-btn" onclick="copyPix()">COPIAR CÓDIGO PIX</button></div><div class="copy-status" id="copyStatus" aria-live="polite"></div><div class="payment-status" id="paymentStatus">● Aguardando confirmação do pagamento pelo banco...</div><div class="warning">A confirmação abaixo é uma simulação para testar o fluxo. Não existe consulta automática ao banco; em uma compra real, a equipe deve conferir o crédito recebido.</div><button class="gold-btn full" onclick="confirmPayment()">Simular Confirmação do Banco / Já Paguei</button></div></div></div><div class="step-pane" id="pane2"><h3 class="form-title">Etapa 2 — Envio do Print e status no Mercado</h3><p class="muted">Envie uma imagem legível mostrando o item anunciado na loja do MIR4.</p><div class="example-row"><button class="outline-btn" type="button" onclick="showExample()">Ver Exemplo</button><span class="muted">O print deve mostrar o item e o preço anunciado.</span></div><div class="field"><label for="printFile">Print do item anunciado no Mercado MIR4</label><div class="upload drop-upload"><input id="printFile" type="file" accept="image/*"><p class="muted">Arraste a imagem para esta área ou clique para selecionar. Máximo: 2 MB.</p><img id="preview" class="preview" alt="Pré-visualização do print anexado"></div></div><fieldset class="market-question"><legend>O item na loja do MIR4 já está disponível para compra? <b>*</b></legend><label><input type="radio" name="marketStatus" value="Sim, já está disponível no mercado"> Sim, já está disponível no mercado</label><label><input type="radio" name="marketStatus" value="Não, ainda está em tempo de registro / aguardando liberação"> Não, ainda está em tempo de registro / aguardando liberação</label></fieldset><div class="warning">Ao concluir, os dados e o print serão enviados ao Painel do Atendente. O pagamento ainda será conferido pela equipe.</div><div class="actions"><button class="outline-btn" onclick="goStep(1)">VOLTAR</button><button class="gold-btn" onclick="submitOrder()">Concluir e Enviar Pedido</button></div><div class="success-box" id="orderSuccess" aria-live="polite"></div></div>
+<div class="steps"><div class="step active" id="stepTab1"><b>01</b>Pagamento</div><div class="step" id="stepTab2"><b>02</b>Envio do Print</div></div>
+<div class="payment-methods" style="display:flex;gap:10px;margin:0 0 18px;flex-wrap:wrap"><button type="button" class="outline-btn" id="methodPix" onclick="setPaymentMethod('pix')">Pagar com Pix</button><button type="button" class="outline-btn" id="methodCard" onclick="setPaymentMethod('card')">Pagar com cartão de crédito</button></div>
+<div class="step-pane active" id="pane1"><div class="pix-layout" id="pixPanel"><div><div class="qr-box" id="pixQr" aria-label="QR Code PIX para pagamento"></div><div class="qr-caption">QR CODE PIX • VALOR TOTAL</div></div><div class="pix-info"><h3>Etapa 1 — Pagamento via Pix</h3><p>Escaneie o QR Code ou copie o código abaixo. Confira o valor total antes de pagar.</p><div class="pix-total-value" id="pixTotalValue">R$ 0,00</div><div class="field"><label>Chave Pix (Copia e Cola)</label><textarea id="pixPayload" readonly rows="4" style="width:100%;padding:11px;background:#080809;border:1px solid #705323;color:#ffe2a0;overflow-wrap:anywhere"></textarea></div><div class="pix-key"><button class="outline-btn" onclick="copyPix()">COPIAR CÓDIGO PIX</button></div><div class="copy-status" id="copyStatus" aria-live="polite"></div><div class="payment-status" id="paymentStatus">● Aguardando confirmação do pagamento pelo banco...</div><div class="warning">A confirmação abaixo é uma simulação para testar o fluxo. Não existe consulta automática ao banco; em uma compra real, a equipe deve conferir o crédito recebido.</div><button class="gold-btn full" onclick="confirmPayment()">Simular Confirmação do Banco / Já Paguei</button></div></div></div><div id="cardPanel" hidden><div class="guide"><h3>Pagamento com cartão de crédito</h3><p>Você será direcionado ao ambiente seguro da InfinitePay para concluir o pagamento.</p><div class="pix-total-value" id="cardTotalValue">R$ 0,00</div><div class="payment-status" id="cardPaymentStatus">O pedido só será liberado após a confirmação do pagamento pela InfinitePay.</div><button class="gold-btn full" id="cardPayButton" type="button" onclick="startInfinitePayCheckout()">CONTINUAR PARA PAGAMENTO SEGURO</button></div></div></div><div class="step-pane" id="pane2"><h3 class="form-title">Etapa 2 — Envio do Print e status no Mercado</h3><p class="muted">Envie uma imagem legível mostrando o item anunciado na loja do MIR4.</p><div class="example-row"><button class="outline-btn" type="button" onclick="showExample()">Ver Exemplo</button><span class="muted">O print deve mostrar o item e o preço anunciado.</span></div><div class="field"><label for="printFile">Print do item anunciado no Mercado MIR4</label><div class="upload drop-upload"><input id="printFile" type="file" accept="image/*"><p class="muted">Arraste a imagem para esta área ou clique para selecionar. Máximo: 2 MB.</p><img id="preview" class="preview" alt="Pré-visualização do print anexado"></div></div><fieldset class="market-question"><legend>O item na loja do MIR4 já está disponível para compra? <b>*</b></legend><label><input type="radio" name="marketStatus" value="Sim, já está disponível no mercado"> Sim, já está disponível no mercado</label><label><input type="radio" name="marketStatus" value="Não, ainda está em tempo de registro / aguardando liberação"> Não, ainda está em tempo de registro / aguardando liberação</label></fieldset><div class="warning">Ao concluir, os dados e o print serão enviados ao Painel do Atendente. O pagamento ainda será conferido pela equipe.</div><div class="actions"><button class="outline-btn" onclick="goStep(1)">VOLTAR</button><button class="gold-btn" onclick="submitOrder()">Concluir e Enviar Pedido</button></div><div class="success-box" id="orderSuccess" aria-live="polite"></div></div>
 </main>
 <footer id="suporte"><div class="wrap"><div class="footer-trust"><span>♢ Compra 100% Segura</span><span>▣ Seus dados protegidos</span><span>◉ Suporte via Chat Online</span></div><div class="footer-brand">AFRODITE <b>MIR<span>4</span></b></div> <div class="copyright">© 2026 AFRODITE MIR4. Loja independente, sem vínculo oficial com MIR4 ou Wemade.</div></div></footer>
 <div class="drawer-backdrop" id="cartBackdrop" onclick="closeCart()"></div>
@@ -698,7 +699,7 @@ body.admin-route>header,body.admin-route>main:not(#adminApp),body.admin-route>fo
 const firebaseConfig = { apiKey: 'COLE_AQUI_SUA_API_KEY', authDomain: 'SEU_PROJETO.firebaseapp.com', databaseURL: 'https://SEU_PROJETO-default-rtdb.firebaseio.com', projectId: 'SEU_PROJETO', storageBucket: 'SEU_PROJETO.appspot.com', messagingSenderId: 'SEU_SENDER_ID', appId: 'SEU_APP_ID' };
 const PIX_KEY='69391561000165',PIX_NAME='AFRODITE MIR4',PIX_CITY='OLINDA',DB_KEY='afrodite_store_orders_v1',CHAT_KEY='afrodite_store_chat_v1',SELLER_WHATSAPP='5581973438718';
 let firebaseDb=null,firebaseEnabled=false;
-let cart=[],currentStep=1,selectedFile=null,pixReceiptFile=null,adminOpen=false,activeOrder=null,toastTimer=null,paymentConfirmed=false;
+let cart=[],currentStep=1,selectedFile=null,pixReceiptFile=null,adminOpen=false,activeOrder=null,toastTimer=null,paymentConfirmed=false,paymentMethod='pix';
 const el=id=>document.getElementById(id),money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 function showToast(message){const t=el('toast');t.textContent=message;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2800)}
 function cartTotal(){return cart.reduce((s,x)=>s+x.price*x.qty,0)}function grandTotal(){return cartTotal()}
@@ -722,7 +723,45 @@ function renderCart(){
 }
 function openSellWhatsApp(){openChat('Olá! Tenho interesse em vender ouro para a Afrodite MIR4.')}
 function showPage(page){closeCart();closeCheckout();document.body.classList.toggle('subpage-active',page!=='home');el('cartPage').style.display=page==='cart'?'block':'none';if(page==='home')window.scrollTo({top:0,behavior:'smooth'});else window.scrollTo({top:0,behavior:'smooth'})}
-function startCheckout(){if(!cart.length){showToast('Adicione um pacote antes de finalizar.');return}if(!el('cartServer').value){showToast('Selecione seu servidor para continuar.');return}paymentConfirmed=false;el('checkout').classList.add('checkout-open');el('cartPage').style.display='none';document.body.classList.add('subpage-active');goStep(1);generatePix();window.scrollTo({top:0,behavior:'smooth'})}
+function startCheckout(){if(!cart.length){showToast('Adicione um pacote antes de finalizar.');return}if(!el('cartServer').value){showToast('Selecione seu servidor para continuar.');return}paymentConfirmed=false;paymentMethod='pix';el('checkout').classList.add('checkout-open');el('cartPage').style.display='none';document.body.classList.add('subpage-active');goStep(1);setPaymentMethod('pix');generatePix();window.scrollTo({top:0,behavior:'smooth'})}
+function setPaymentMethod(method){
+ paymentMethod=method==='card'?'card':'pix';
+ el('pixPanel').hidden=paymentMethod!=='pix';
+ el('cardPanel').hidden=paymentMethod!=='card';
+ el('methodPix').classList.toggle('gold-btn',paymentMethod==='pix');
+ el('methodCard').classList.toggle('gold-btn',paymentMethod==='card');
+ el('cardTotalValue').textContent=money(grandTotal());
+ el('stepTab1').innerHTML='<b>01</b>Pagamento';
+}
+async function startInfinitePayCheckout(){
+ if(!cart.length){showToast('Sua sacola está vazia.');return}
+ const button=el('cardPayButton');button.disabled=true;button.textContent='Preparando pagamento...';
+ try{
+  const response=await fetch('/api/infinitepay/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({server:el('cartServer').value,items:cart.map(x=>({name:x.name,qty:x.qty}))})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||!data.url)throw new Error(data.error||'Não foi possível iniciar o pagamento.');
+  window.location.assign(data.url);
+ }catch(error){showToast(error.message||'Falha ao iniciar o pagamento.');button.disabled=false;button.textContent='CONTINUAR PARA PAGAMENTO SEGURO'}
+}
+async function handleInfinitePayReturn(){
+ const params=new URLSearchParams(window.location.search);
+ if(params.get('infinitepay')!=='return')return;
+ const order_nsu=params.get('order_nsu'),transaction_nsu=params.get('transaction_nsu'),slug=params.get('slug'),capture_method=params.get('capture_method');
+ el('checkout').classList.add('checkout-open');el('cartPage').style.display='none';document.body.classList.add('subpage-active');
+ setPaymentMethod('card');el('cardPaymentStatus').textContent='Conferindo o pagamento com a InfinitePay...';el('cardPayButton').disabled=true;
+ try{
+  if(capture_method!=='credit_card'||!order_nsu||!transaction_nsu||!slug)throw new Error('Não recebemos todos os dados para confirmar o pagamento. Entre em contato com o atendimento.');
+  const response=await fetch('/api/infinitepay/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order_nsu,transaction_nsu,slug})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||data.paid!==true)throw new Error(data.error||'O pagamento ainda não foi confirmado. Aguarde alguns instantes e fale com o atendimento se já pagou.');
+  cart=(data.items||[]).map(item=>({name:item.name,price:Number(item.price_centavos)/100,qty:Number(item.quantity)}));
+  if(!cart.length||!['SA1','NA1'].includes(data.server))throw new Error('Pagamento confirmado, mas não foi possível recuperar os dados do pedido. Fale com o atendimento.');
+  el('cartServer').value=data.server;renderCart();paymentConfirmed=true;paymentMethod='card';
+  el('cardPaymentStatus').textContent='✓ Pagamento com cartão confirmado pela InfinitePay.';
+  el('stepTab1').classList.remove('active');el('stepTab2').classList.add('active');
+  goStep(2);showToast('Pagamento confirmado! Envie o print para concluir o pedido.');
+ }catch(error){el('cardPaymentStatus').textContent=error.message;el('cardPayButton').disabled=false;el('cardPayButton').textContent='TENTAR NOVAMENTE';showToast(error.message)}
+}
 function closeCheckout(){el('checkout').classList.remove('checkout-open');}
 function tlv(id,value){const v=String(value);return id+String(v.length).padStart(2,'0')+v}
 function crc16(payload){let crc=0xFFFF;for(let i=0;i<payload.length;i++){crc^=payload.charCodeAt(i)<<8;for(let j=0;j<8;j++)crc=(crc&0x8000)?((crc<<1)^0x1021):(crc<<1);crc&=0xFFFF}return crc.toString(16).toUpperCase().padStart(4,'0')}
@@ -741,7 +780,7 @@ function generatePix(){
 }
 async function copyPix(){try{await navigator.clipboard.writeText(el('pixPayload').value);el('copyStatus').textContent='Código PIX Copia e Cola copiado.'}catch(e){el('pixPayload').focus();el('pixPayload').select();el('copyStatus').textContent='Selecione e copie o código PIX acima.'}}
 function goStep(n){if(!cart.length){showToast('Adicione um pacote antes de finalizar.');showPage('cart');return}if(n===2&&!paymentConfirmed){showToast('Confirme o pagamento para liberar o envio do print.');return}currentStep=n;[1,2].forEach(i=>{el('pane'+i).classList.toggle('active',i===n);el('stepTab'+i).classList.toggle('active',i===n)});if(n===2)el('orderSuccess').classList.remove('show')}
-function confirmPayment(){paymentConfirmed=true;const status=el('paymentStatus');status.textContent='✓ Pagamento informado pelo cliente — aguardando conferência bancária.';status.classList.add('confirmed');showToast('Etapa de envio do print liberada.');goStep(2)}
+function confirmPayment(){if(paymentMethod!=='pix'){showToast('O cartão só é liberado após confirmação automática da InfinitePay.');return}paymentConfirmed=true;const status=el('paymentStatus');status.textContent='✓ Pagamento informado pelo cliente — aguardando conferência bancária.';status.classList.add('confirmed');showToast('Etapa de envio do print liberada.');goStep(2)}
 function showExample(){showToast('Exemplo: print do MIR4 mostrando o item, o preço em ouro e o status do anúncio.')}
 function readImageInput(input,callback){const file=input.files&&input.files[0];if(!file){callback(null);return}if(!file.type.startsWith('image/')){showToast('Selecione um arquivo de imagem.');input.value='';callback(null);return}if(file.size>2*1024*1024){showToast('A imagem deve ter no máximo 2 MB.');input.value='';callback(null);return}const reader=new FileReader();reader.onload=()=>callback({name:file.name,type:file.type,data:reader.result});reader.onerror=()=>{showToast('Não foi possível ler a imagem.');callback(null)};reader.readAsDataURL(file)}
 el('printFile').addEventListener('change',e=>{readImageInput(e.target,file=>{selectedFile=file;el('preview').style.display='none';if(file){el('preview').src=file.data;el('preview').style.display='block'}})});
@@ -761,12 +800,12 @@ function submitOrder(){
  if(!paymentConfirmed){showToast('Confirme o pagamento antes de enviar o pedido.');return}
  const server=el('cartServer').value.trim(),market=document.querySelector('input[name="marketStatus"]:checked');
  if(!server||!selectedFile||!market){showToast('Anexe o print e informe se o item já está disponível no mercado.');return}
- const order={id:'AFR-'+Date.now().toString().slice(-8),date:Date.now(),items:cart.map(x=>({...x})),subtotal:cartTotal(),fee:0,total:cartTotal(),nickname:'',server,item:'Anúncio no Mercado MIR4',proof:selectedFile,pixReceipt:null,marketStatus:market.value,paymentStatus:'Pagamento informado pelo cliente — aguardando conferência bancária',status:'Pedido recebido — aguardando conferência do pagamento e do anúncio'};
+ const order={id:'AFR-'+Date.now().toString().slice(-8),date:Date.now(),items:cart.map(x=>({...x})),subtotal:cartTotal(),fee:0,total:cartTotal(),nickname:'',server,item:'Anúncio no Mercado MIR4',proof:selectedFile,pixReceipt:null,marketStatus:market.value,paymentStatus:paymentMethod==='card'?'Cartão confirmado pela InfinitePay':'Pagamento informado pelo cliente — aguardando conferência bancária',status:'Pedido recebido — aguardando conferência do anúncio'};
  try{
   const all=getOrders();all.unshift(order);saveOrders(all);
   const customerMessage='Seu pedido '+order.id+' foi recebido. Nossa equipe vai conferir o pagamento no banco e o status do anúncio no Mercado MIR4. Situação informada: '+order.marketStatus+'.';
   const msgs=getChat();msgs.push({from:'seller',text:customerMessage,time:Date.now(),orderId:order.id});saveChat(msgs);notifySeller(order);
-  el('orderSuccess').textContent='✓ Pedido '+order.id+' concluído e enviado ao Painel do Atendente! A equipe verificará o crédito no banco e o anúncio antes de liberar a entrega. A simulação não representa confirmação bancária real.';
+  el('orderSuccess').textContent=paymentMethod==='card'?'✓ Pedido '+order.id+' recebido! O pagamento com cartão foi confirmado pela InfinitePay. A equipe verificará o anúncio antes de liberar a entrega.':'✓ Pedido '+order.id+' recebido! A equipe verificará o pagamento informado e o anúncio antes de liberar a entrega.';
   el('orderSuccess').classList.add('show');openChat();renderChat();
   cart=[];renderCart();selectedFile=null;paymentConfirmed=false;el('printFile').value='';el('preview').style.display='none';document.querySelectorAll('input[name="marketStatus"]').forEach(x=>x.checked=false);
  }catch(e){showToast('Não foi possível registrar o pedido. Tente uma imagem menor.')}
@@ -822,13 +861,14 @@ function initFirebase(){
 
 // Disponibiliza explicitamente as ações usadas pelos onclick do HTML.
 Object.assign(window,{
- showPage,addToCart,openSellWhatsApp,openCart,closeCart,closeCheckout,startCheckout,
+ showPage,addToCart,openSellWhatsApp,openCart,closeCart,closeCheckout,startCheckout,setPaymentMethod,startInfinitePayCheckout,
  changeQty,removeCartItem,copyPix,confirmPayment,goStep,showExample,submitOrder,
  openChat,closeChat,sendChat,openAdmin,closeAdmin,loginAdmin,replyChat
 });
 // Inicialização isolada: uma falha opcional não deve desativar os demais botões.
 try{initFirebase()}catch(error){console.error('Falha na inicialização do Firebase:',error)}
 try{renderCart()}catch(error){console.error('Falha ao desenhar a sacola:',error);document.body.dataset.cartError='true'}
+try{handleInfinitePayReturn()}catch(error){console.error('Falha ao validar retorno da InfinitePay:',error)}
 try{initAdminRoute()}catch(error){console.error('Falha ao abrir a área administrativa:',error)}
 </script>
 
