@@ -52,6 +52,7 @@ export async function onRequest({request, env}) {
       items: items.map(x=>({quantity:x.quantity,price:x.price,description:x.name+" — Servidor "+body.server})),
       order_nsu,
       redirect_url: origin + "/?infinitepay=return",
+      webhook_url: origin + "/api/infinitepay/webhook",
       options: { payment_methods_enabled:["pix"], assured_installments:0, require_delivery_address:false }
     };
     const response = await fetch("https://api.checkout.infinitepay.io/links",{
