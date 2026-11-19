@@ -15,9 +15,9 @@ export async function onRequest({request,env}) {
     const transaction=String(body.transaction_nsu||"");
     const slug=String(body.slug||"");
     if(!/^AFR-[0-9a-f-]{36}$/i.test(order) || !transaction || !slug) return json({paid:false,pending:true});
-    const rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status&order_nsu=eq."+encodeURIComponent(order));
+    const rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens&order_nsu=eq."+encodeURIComponent(order));
     if(!rows?.length) return json({error:"Pedido não encontrado."},404);
-    if(rows[0].status==="pago") return json({paid:true});
+    if(rows[0].status==="pago") return json({paid:true,server:rows[0].itens?.server,items:rows[0].itens?.items||[]});
     const response=await fetch("https://api.checkout.infinitepay.io/payment_check",{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({handle:HANDLE,order_nsu:order,transaction_nsu:transaction,slug})
@@ -28,7 +28,7 @@ export async function onRequest({request,env}) {
     await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(order),{
       method:"PATCH",body:JSON.stringify({status:"pago",transaction_nsu:transaction,invoice_slug:slug,confirmado_em:new Date().toISOString()})
     });
-    return json({paid:true});
+    return json({paid:true,server:rows[0].itens?.server,items:rows[0].itens?.items||[]});
   } catch(error) {
     return json({error:"Não foi possível confirmar o pagamento agora. Atualize a página em instantes."},500);
   }
