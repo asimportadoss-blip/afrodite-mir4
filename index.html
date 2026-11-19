@@ -799,8 +799,8 @@ async function verifyInfinitePayReturn(attempts=10){
     return true;
    }
    lastMessage=data.error||'A InfinitePay ainda não confirmou o pagamento.';
-   if(data.diagnostic)lastMessage+='\n\nDiagnóstico enviado/recebido:\n'+JSON.stringify({enviado:data.diagnostic.enviado,resposta_http:data.diagnostic.resposta_http,resposta:data.diagnostic.resposta},null,2);
    if(response.status>=400&&response.status!==409&&response.status!==404)lastMessage=data.error||'Não foi possível consultar a confirmação agora.';
+   if(data.diagnostic)lastMessage+='\n\nDiagnóstico enviado/recebido:\n'+JSON.stringify({enviado:data.diagnostic.enviado,resposta_http:data.diagnostic.resposta_http,resposta:data.diagnostic.resposta},null,2);
   }catch(error){lastMessage=error.message||'Falha temporária ao consultar o pagamento.'}
   if(attempt<attempts)await new Promise(resolve=>setTimeout(resolve,2000));
  }
