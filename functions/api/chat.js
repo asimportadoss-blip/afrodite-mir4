@@ -79,8 +79,14 @@ export async function onRequest(context){
    if(!rows.length)return json({error:"Pedido não encontrado."},404);
    const current=String(rows[0].status_pedido||"chat_ativo");
    const paidStates=["pago","em_andamento","entregue"];
-   if((nextStatus==="em_andamento"||nextStatus==="entregue"||nextStatus==="pago")&&!paidStates.includes(current)){
-    return json({error:"Este pedido ainda não possui pagamento confirmado pela InfinitePay."},409);
+   if(nextStatus==="pago"&&current!=="pago"){
+    return json({error:"A situação de pagamento só pode ser confirmada automaticamente pela InfinitePay."},409);
+   }
+   if(nextStatus==="em_andamento"&&!["pago","em_andamento"].includes(current)){
+    return json({error:"Confirme o pagamento pela InfinitePay antes de iniciar a entrega."},409);
+   }
+   if(nextStatus==="entregue"&&!["pago","em_andamento","entregue"].includes(current)){
+    return json({error:"Confirme o pagamento antes de marcar o pedido como entregue."},409);
    }
    if(nextStatus==="pendente"&&paidStates.includes(current)){
     return json({error:"Um pedido pago não pode voltar para pendente."},409);
