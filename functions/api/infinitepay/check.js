@@ -11,7 +11,7 @@ export async function onRequest({request,env}) {
   if(request.method!=="POST") return json({error:"Método não permitido."},405);
   try {
     const body=await request.json();
-    const order=String(body.order_nsu||"");
+    const order=String(body.order_nsu||body.pedido_id||"");
     let transaction=String(body.transaction_nsu||"");
     let slug=String(body.slug||"");
     console.log("InfinitePay check request received",{has_order:!!order,has_transaction:!!transaction,has_slug:!!slug});
