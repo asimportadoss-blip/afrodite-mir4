@@ -51,7 +51,7 @@ export async function onRequest({request, env}) {
       handle: HANDLE,
       items: items.map(x=>({quantity:x.quantity,price:x.price,description:x.name+" — Servidor "+body.server})),
       order_nsu,
-      redirect_url: origin + "/?infinitepay=return&order_nsu=" + encodeURIComponent(order_nsu),
+      redirect_url: "https://afrodite-mir4.pages.dev/?pedido_id=" + encodeURIComponent(order_nsu) + "&order_nsu=" + encodeURIComponent(order_nsu) + "&retorno_pagamento=1&infinitepay=return",
       webhook_url: origin + "/api/infinitepay/webhook",
       options: { payment_methods_enabled:["pix"], assured_installments:0, require_delivery_address:false }
     };
