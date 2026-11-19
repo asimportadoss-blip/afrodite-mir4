@@ -32,6 +32,7 @@ export async function onRequest({request,env}) {
       method:"PATCH",
       body:JSON.stringify({status:"pago",transaction_nsu:transaction,invoice_slug:slug,confirmado_em:new Date().toISOString(),itens:{...rows[0].itens,capture_method:method,installments,paid_amount:Number(result.paid_amount||result.amount)}})
     });
+    if(rows[0].itens?.atendimento_id) await db(env,"atendimentos?id=eq."+encodeURIComponent(rows[0].itens.atendimento_id),{method:"PATCH",body:JSON.stringify({status_pedido:"pago",servidor:rows[0].itens.server,pacote:(rows[0].itens.items||[]).map(x=>x.name+" x "+x.quantity).join(", "),valor_total:Number(result.paid_amount||result.amount)/100,atualizado_em:new Date().toISOString()})});
     return json({received:true,confirmed:true});
   } catch(error) {
     console.error("InfinitePay webhook internal error",{message:error?.message||"unknown"});
