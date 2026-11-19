@@ -165,8 +165,10 @@ export async function onRequest(context){
     let isStoragePrint=false;
     try{const parsed=new URL(printUrl),base=new URL(env.SUPABASE_URL);isStoragePrint=parsed.protocol==="https:"&&parsed.origin===base.origin&&parsed.pathname.startsWith("/storage/v1/object/public/prints-pedidos/")}catch{}
     if(!isBase64Print&&!isStoragePrint)return json({error:"O print enviado é inválido ou não pertence ao Storage da loja."},400);
-    const claim=await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(orderId)+"&status=eq.pago&itens->>pedido_enviado_em=is.null",{method:"PATCH",body:JSON.stringify({itens:{...details,pedido_enviado_em:now}})});
-    if(!claim.length)return json({error:"Este pedido já está sendo enviado ou foi concluído anteriormente."},409);
+    if(payment){
+     const claim=await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(orderId)+"&status=eq.pago&itens->>pedido_enviado_em=is.null",{method:"PATCH",body:JSON.stringify({itens:{...details,pedido_enviado_em:now}})});
+     if(!claim.length)return json({error:"Este pedido já está sendo enviado ou foi concluído anteriormente."},409);
+    }
     patch.servidor=String(details.server).slice(0,80);
     patch.pacote=expectedPackages.slice(0,300);
     patch.valor_total=expectedTotal/100;
@@ -205,7 +207,7 @@ export async function onRequest(context){
       if(previous&&Date.now()-previous<120000)shouldNotifyTelegram=false;
      }catch(error){console.error("Telegram chat throttle lookup failed",{message:error?.message||"unknown"});shouldNotifyTelegram=false;}
     }
-    if(shouldNotifyTelegram)await sendTelegramAlert(env,{tipo,pedido_id:body.order_id||atendimentoId,cliente_nome:body.cliente_nome||"Cliente Afrodite",servidor:body.servidor||"",pacote:body.pacote||"",valor_total:body.valor_total?Number(body.valor_total).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"",mensagem:text},context);
+    if(shouldNotifyTelegram&&body.order_complete!==true)await sendTelegramAlert(env,{tipo,pedido_id:body.order_id||atendimentoId,cliente_nome:body.cliente_nome||"Cliente Afrodite",servidor:body.servidor||"",pacote:body.pacote||"",valor_total:body.valor_total?Number(body.valor_total).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"",mensagem:text},context);
    }
    return json({ok:true,mensagem,order_saved:referente==="cliente"&&body.order_complete===true});
   }
