@@ -29,7 +29,6 @@ export async function onRequest({request,env}) {
       await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(order),{method:"PATCH",body:JSON.stringify(saved)});
     }
     if(rows[0].status==="pago") {
-      if(rows[0].itens?.atendimento_id) await db(env,"atendimentos?id=eq."+encodeURIComponent(rows[0].itens.atendimento_id),{method:"PATCH",body:JSON.stringify({status_pedido:"pago",atualizado_em:new Date().toISOString()})});
       return json({success:true,already_paid:true});
     }
     const finalTransaction=transaction||rows[0].transaction_nsu||"";
