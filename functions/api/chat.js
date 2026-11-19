@@ -122,7 +122,7 @@ export async function onRequest(context){
    if(referente==="cliente")patch.nao_lidas=1;
    if(referente==="cliente"&&body.order_complete===true){
     const orderId=String(body.order_id||"").trim();
-    if(!/^AFR-[0-9a-f-]{36}$/i.test(orderId))return json({error:"Identificador do pedido inválido."},400);
+    if(!orderId)return json({error:"Identificador do pedido não informado."},400);
     const paymentRows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens&order_nsu=eq."+encodeURIComponent(orderId));
     if(!paymentRows.length)return json({error:"Não encontramos o pagamento deste pedido."},409);
     const payment=paymentRows[0],details=payment.itens||{};
