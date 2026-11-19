@@ -26,16 +26,24 @@ export async function onRequest({request,env}){
  try{
   const body=await request.json();
   const orderNsu=String(body.order_nsu||body.pedido_id||body.pedidoId||body.id||"").trim();
-  if(!/^AFR-[0-9a-f-]{36}$/i.test(orderNsu))return json({error:"Identificador do pedido inválido."},400);
-  const rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&order_nsu=eq."+encodeURIComponent(orderNsu));
-  if(!rows?.length)return json({error:"Pedido não encontrado."},404);
+  const transactionNsu=String(body.transaction_nsu||body.transaction_id||body.transactionId||"").trim();
+  if(!orderNsu&&!transactionNsu)return json({error:"Informe o identificador do pedido ou da transação para consultar o pagamento."},400);
+  let rows=orderNsu
+   ? await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&order_nsu=eq."+encodeURIComponent(orderNsu))
+   : await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&transaction_nsu=eq."+encodeURIComponent(transactionNsu));
+  if(!rows?.length&&orderNsu&&transactionNsu){
+   rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&transaction_nsu=eq."+encodeURIComponent(transactionNsu));
+  }
+  if(!rows?.length)return json({error:"Pedido não encontrado. Confira o identificador retornado pela InfinitePay."},404);
   const row=rows[0];
+  const canonicalOrderNsu=String(row.order_nsu||"");
+  if(!canonicalOrderNsu)return json({error:"O pedido encontrado não possui identificador de cobrança."},409);
   if(row.status==="pago"){await syncAttendance(env,row.itens,"pago");return json(paymentResponse(row));}
   if(row.status!=="pendente")return json({paid:false,pending:false,error:"Este pedido não está disponível para confirmação."},409);
-  const transactionNsu=String(body.transaction_nsu||body.transaction_id||body.transactionId||"").trim();
+  const transactionNsu=String(body.transaction_nsu||body.transaction_id||body.transactionId||row.transaction_nsu||"").trim();
   const slug=String(body.slug||"").trim();
   const handle=String(body.handle||env.INFINITEPAY_HANDLE||DEFAULT_HANDLE).replace(/^\$/,"").trim();
-  const sent={handle,order_nsu:orderNsu,transaction_nsu:transactionNsu||undefined,slug:slug||undefined};
+  const sent={handle,order_nsu:canonicalOrderNsu,transaction_nsu:transactionNsu||undefined,slug:slug||undefined};
   const response=await fetch("https://api.infinitepay.io/invoices/public/checkout/payment_check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sent)});
   const raw=await response.text();let result;try{result=raw?JSON.parse(raw):null}catch{result={raw_response:raw};}
   console.log("InfinitePay payment_check",{http_status:response.status,success:result?.success??null,paid:result?.paid??null,has_order:true,has_transaction:!!transactionNsu,has_slug:!!slug});
@@ -44,14 +52,14 @@ export async function onRequest({request,env}){
   }
   const method=result.capture_method,installments=method==="credit_card"?Number(result.installments):null;
   if(Number(result.amount)!==Number(row.total_centavos)||!(method==="pix"||method==="credit_card")||(method==="credit_card"&&(!Number.isInteger(installments)||installments<1||installments>12))){
-   console.error("InfinitePay payment mismatch",{order_nsu:orderNsu,expected_amount:row.total_centavos,received_amount:result.amount,capture_method:method});
+   console.error("InfinitePay payment mismatch",{order_nsu:canonicalOrderNsu,expected_amount:row.total_centavos,received_amount:result.amount,capture_method:method});
    return json({paid:false,pending:false,error:"O pagamento retornado não corresponde ao valor ou às condições deste pedido. Fale com o atendimento."},409);
   }
   const paidAmount=Number(result.paid_amount||result.amount);
   if(!Number.isFinite(paidAmount)||paidAmount<=0)return json({paid:false,pending:false,error:"A InfinitePay retornou um valor pago inválido."},409);
   const details={...(row.itens||{}),capture_method:method,installments,paid_amount:paidAmount};
   const patch={status:"pago",transaction_nsu:transactionNsu||row.transaction_nsu||null,invoice_slug:slug||row.invoice_slug||null,confirmado_em:new Date().toISOString(),itens:details};
-  await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(orderNsu),{method:"PATCH",body:JSON.stringify(patch)});
+  await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(canonicalOrderNsu),{method:"PATCH",body:JSON.stringify(patch)});
   await syncAttendance(env,details,"pago");
   return json(paymentResponse({...row,status:"pago",itens:details}));
  }catch(error){
