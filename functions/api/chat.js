@@ -30,10 +30,9 @@ async function sendWhatsappAlert(env,message){
 async function sendTelegramAlert(env,payload,context){
  const token=String(env.TELEGRAM_BOT_TOKEN||"").trim(),chatId=String(env.TELEGRAM_CHAT_ID||"").trim();
  if(!token||!chatId)return;
- const tipo=payload.tipo==="novo_pedido"?"novo_pedido":"mensagem";
- const text=tipo==="novo_pedido"
-  ? "🔔 NOVO PEDIDO PAGO - AFRODITE MIR4\\nPedido: "+(payload.pedido_id||"—")+"\\nPacote: "+(payload.pacote||"—")+"\\nValor: "+(payload.valor_total||"—")+"\\nServidor: "+(payload.servidor||"—")+"\\nAcesse o Painel Admin para entregar!"
-  : "💬 NOVA MENSAGEM NO CHAT - AFRODITE MIR4\\nCliente: "+(payload.cliente_nome||"Cliente")+"\\nMensagem: \\""+String(payload.mensagem||"").slice(0,1000)+"\\"\\nAcesse o Painel Admin para responder!";
+ const text=payload.tipo==="novo_pedido"
+  ? ["🔔 NOVO PEDIDO PAGO - AFRODITE MIR4","Pedido: "+(payload.pedido_id||"—"),"Pacote: "+(payload.pacote||"—"),"Valor: "+(payload.valor_total||"—"),"Servidor: "+(payload.servidor||"—"),"Acesse o Painel Admin para entregar!"].join("\n")
+  : ["💬 NOVA MENSAGEM NO CHAT - AFRODITE MIR4","Cliente: "+(payload.cliente_nome||"Cliente"),"Mensagem: \""+String(payload.mensagem||"").slice(0,1000)+"\"","Acesse o Painel Admin para responder!"].join("\n");
  const task=(async()=>{try{const response=await fetch("https://api.telegram.org/bot"+token+"/sendMessage",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id:chatId,text})});if(!response.ok)console.error("Telegram notification failed",{status:response.status,body:(await response.text()).slice(0,300)});}catch(error){console.error("Telegram notification error",{message:error?.message||"unknown"})}})();
  if(typeof context.waitUntil==="function")context.waitUntil(task);else await task;
 }
