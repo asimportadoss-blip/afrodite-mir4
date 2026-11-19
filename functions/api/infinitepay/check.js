@@ -38,8 +38,7 @@ export async function onRequest({request,env}){
   const row=rows[0];
   const canonicalOrderNsu=String(row.order_nsu||"");
   if(!canonicalOrderNsu)return json({error:"O pedido encontrado não possui identificador de cobrança."},409);
-  if(row.status==="pago"){await syncAttendance(env,row.itens,"pago");return json(paymentResponse(row));}
-  if(row.status!=="pendente")return json({paid:false,pending:false,error:"Este pedido não está disponível para confirmação."},409);
+  if(row.status!=="pendente"&&row.status!=="pago")return json({paid:false,success:false,ok:false,status:"pendente",status_pedido:"pendente",pending:true,error:"Este pedido não está disponível para confirmação."},409);
   transactionNsu=transactionNsu||String(row.transaction_nsu||"").trim();
   const slug=String(body.slug||"").trim();
   const handle=String(body.handle||env.INFINITEPAY_HANDLE||DEFAULT_HANDLE).replace(/^\$/,"").trim();
@@ -47,8 +46,9 @@ export async function onRequest({request,env}){
   const response=await fetch("https://api.infinitepay.io/invoices/public/checkout/payment_check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sent)});
   const raw=await response.text();let result;try{result=raw?JSON.parse(raw):null}catch{result={raw_response:raw};}
   console.log("InfinitePay payment_check",{http_status:response.status,success:result?.success??null,paid:result?.paid??null,has_order:true,has_transaction:!!transactionNsu,has_slug:!!slug});
-  if(!response.ok||result?.success===false||result?.paid!==true){
-   return json({paid:false,success:false,ok:false,status:"pendente",status_pedido:"pendente",pending:true,order_nsu:canonicalOrderNsu,error:!response.ok?"A InfinitePay respondeu HTTP "+response.status+".":"A InfinitePay ainda não confirmou o pagamento.",enviado:sent,infinitepay_resposta:result,diagnostic:{resposta_http:response.status,enviado:sent,resposta:result}},response.ok?409:502);
+  const providerPaid=result?.paid===true||Number(result?.paid_amount)>0;
+  if(!response.ok||!providerPaid){
+   return json({paid:false,status:"pendente",status_pedido:"pendente",pending:true,order_nsu:canonicalOrderNsu,error:"Pagamento ainda não identificado."},response.ok?409:502);
   }
   const method=result.capture_method,installments=method==="credit_card"?Number(result.installments):null;
   if(Number(result.amount)!==Number(row.total_centavos)||!(method==="pix"||method==="credit_card")||(method==="credit_card"&&(!Number.isInteger(installments)||installments<1||installments>12))){
