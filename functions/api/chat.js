@@ -124,11 +124,15 @@ export async function onRequest(context){
     if(!Number.isFinite(submittedTotal)||submittedTotal!==expectedTotal||String(body.servidor||"")!==String(details.server||"")||String(body.pacote||"")!==expectedPackages){
      return json({error:"Os dados do pedido não correspondem ao pagamento confirmado. Atualize a página e tente novamente."},409);
     }
-    const currentOrder=await db(env,"atendimentos?select=id,print_url&id=eq."+encodeURIComponent(atendimentoId));
+    const currentOrder=await db(env,"atendimentos?select=id&id=eq."+encodeURIComponent(atendimentoId));
     if(!currentOrder.length)return json({error:"Atendimento não encontrado."},404);
-    if(currentOrder[0].print_url)return json({error:"Este pedido já foi enviado. Não é necessário enviá-lo novamente."},409);
+    if(!text.includes(orderId))return json({error:"O resumo do pedido não contém o identificador de pagamento."},400);
+    const duplicate=await db(env,"mensagens?select=id&atendimento_id=eq."+encodeURIComponent(atendimentoId)+"&texto=like.*"+encodeURIComponent(orderId)+"*&limit=1");
+    if(duplicate.length)return json({error:"Este pedido já foi enviado ao atendimento."},409);
     const printUrl=String(body.print_url||"");
     if(!/^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(printUrl)||printUrl.length>3000000)return json({error:"O print enviado é inválido ou excede o limite permitido."},400);
+    const claim=await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(orderId)+"&status=eq.pago&itens->>pedido_enviado_em=is.null",{method:"PATCH",body:JSON.stringify({itens:{...details,pedido_enviado_em:now}})});
+    if(!claim.length)return json({error:"Este pedido já está sendo enviado ou foi concluído anteriormente."},409);
     patch.servidor=String(details.server).slice(0,80);
     patch.pacote=expectedPackages.slice(0,300);
     patch.valor_total=expectedTotal/100;
@@ -136,8 +140,21 @@ export async function onRequest(context){
     patch.print_url=printUrl;
     patch.status_pedido="pago";
    }
-   await db(env,"atendimentos?id=eq."+encodeURIComponent(atendimentoId),{method:"PATCH",body:JSON.stringify(patch)});
-   const inserted=await db(env,"mensagens",{method:"POST",body:JSON.stringify({atendimento_id:atendimentoId,remetente:referente,texto})});
+   let inserted;
+   try{
+    await db(env,"atendimentos?id=eq."+encodeURIComponent(atendimentoId),{method:"PATCH",body:JSON.stringify(patch)});
+    inserted=await db(env,"mensagens",{method:"POST",body:JSON.stringify({atendimento_id:atendimentoId,remetente:referente,texto})});
+   }catch(error){
+    if(referente==="cliente"&&body.order_complete===true){
+     const orderId=String(body.order_id||"");
+     const paymentRows=await db(env,"pagamentos_infinitepay?select=itens&order_nsu=eq."+encodeURIComponent(orderId)).catch(()=>[]);
+     if(paymentRows[0]?.itens){
+      const restored={...paymentRows[0].itens};delete restored.pedido_enviado_em;
+      await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(orderId),{method:"PATCH",body:JSON.stringify({itens:restored})}).catch(()=>{});
+     }
+    }
+    throw error;
+   }
    const mensagem=inserted?.[0]?(({remetente,...m})=>({...m,referente:remetente}))(inserted[0]):null;
    if(referente==="cliente"){
     const alertText="🔔 Novo atendimento/mensagem no site Afrodite MIR4! Acesse o Painel Admin para responder e entregar.";
