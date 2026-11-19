@@ -792,7 +792,8 @@ function getChat(){try{return JSON.parse(localStorage.getItem(CHAT_KEY)||'[]')}c
 function saveChat(a){localStorage.setItem(CHAT_KEY,JSON.stringify(a));if(firebaseEnabled)firebaseDb.ref('afrodite/chat').set(a).catch(()=>showToast('Não foi possível sincronizar o atendimento.'));window.dispatchEvent(new Event('storeUpdated'))}
 function notifySeller(order){
  const packages=order.items.map(x=>x.name+' x '+x.qty).join(', ');
- const paymentNote=order.paymentStatus==='Cartão confirmado pela InfinitePay'?'Pagamento com cartão confirmado pela InfinitePay.':'Pagamento informado pelo cliente; conferir o crédito no banco antes da entrega.';\n const message='NOVO PEDIDO AFRODITE MIR4\\nPedido: '+order.id+'\\nPacote comprado: '+packages+'\\nValor total: '+money(order.total)+'\\nServidor: '+order.server+'\\nStatus do item no mercado: '+(order.marketStatus||'não informado')+'\\nPrint anexado no Painel Atendente.\\n'+paymentNote;
+ const paymentNote=order.paymentStatus==='Cartão confirmado pela InfinitePay'?'Pagamento com cartão confirmado pela InfinitePay.':'Pagamento informado pelo cliente; conferir o crédito no banco antes da entrega.';
+ const message='NOVO PEDIDO AFRODITE MIR4\nPedido: '+order.id+'\nPacote comprado: '+packages+'\nValor total: '+money(order.total)+'\nServidor: '+order.server+'\nStatus do item no mercado: '+(order.marketStatus||'não informado')+'\nPrint anexado no Painel Atendente.\n'+paymentNote;
  const url='https://wa.me/'+SELLER_WHATSAPP+'?text='+encodeURIComponent(message);
  window.open(url,'_blank','noopener,noreferrer');
 }
