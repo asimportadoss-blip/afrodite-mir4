@@ -38,7 +38,7 @@ export async function onRequest({request,env}){
   const row=rows[0];
   const canonicalOrderNsu=String(row.order_nsu||"");
   if(!canonicalOrderNsu)return json({error:"O pedido encontrado não possui identificador de cobrança."},409);
-  if(row.status!=="pendente"&&row.status!=="pago")return json({paid:false,success:false,ok:false,status:"pendente",status_pedido:"pendente",pending:true,error:"Este pedido não está disponível para confirmação."},409);
+  if(row.status!=="pendente"&&row.status!=="pago")return json({paid:false,status:"pendente",status_pedido:"pendente",pending:true,error:"Este pedido não está disponível para confirmação."},409);
   transactionNsu=transactionNsu||String(row.transaction_nsu||"").trim();
   const slug=String(body.slug||"").trim();
   const handle=String(body.handle||env.INFINITEPAY_HANDLE||DEFAULT_HANDLE).replace(/^\$/,"").trim();
