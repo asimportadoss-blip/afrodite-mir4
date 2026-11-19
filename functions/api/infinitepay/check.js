@@ -23,10 +23,26 @@ export async function onRequest({request,env}) {
       body:JSON.stringify({handle:HANDLE,order_nsu:order,transaction_nsu:transaction,slug})
     });
     const result=await response.json().catch(()=>null);
-    if(!response.ok || result?.success!==true || result?.paid!==true) return json({paid:false,pending:true});
+    if(!response.ok) {
+      console.error("InfinitePay payment_check HTTP error",{http_status:response.status,response_fields:result&&typeof result==="object"?Object.keys(result):[]});
+      return json({paid:false,pending:true,error:"A InfinitePay respondeu com erro HTTP "+response.status+" ao consultar o pagamento. Tente consultar novamente."},502);
+    }
+    if(result?.success!==true) {
+      console.error("InfinitePay payment_check unsuccessful",{success:result?.success??null,paid:result?.paid??null,response_fields:result&&typeof result==="object"?Object.keys(result):[]});
+      return json({paid:false,pending:true,error:"A InfinitePay não validou a consulta (success diferente de true). Confira os dados de retorno e tente novamente."},502);
+    }
+    if(result?.paid!==true) {
+      console.log("InfinitePay payment_check pending",{success:result.success,paid:result.paid});
+      return json({paid:false,pending:true,error:"A InfinitePay respondeu que este pedido ainda não consta como pago (paid diferente de true)."},409);
+    }
     const method=result.capture_method;
     const installments=method==="credit_card"?Number(result.installments):null;
-    if(Number(result.amount)!==Number(rows[0].total_centavos) || !["credit_card","pix"].includes(method) || (method==="credit_card" && (!Number.isInteger(installments) || installments<1 || installments>12))) return json({paid:false,pending:true,error:"O pagamento ainda não pôde ser validado. Confira o método e o valor do pagamento."},409);
+    const receivedAmount=Number(result.amount);
+    const expectedAmount=Number(rows[0].total_centavos);
+    if(receivedAmount!==expectedAmount || !["credit_card","pix"].includes(method) || (method==="credit_card" && (!Number.isInteger(installments) || installments<1 || installments>12))) {
+      console.error("InfinitePay payment_check validation mismatch",{expected_amount:expectedAmount,received_amount:Number.isFinite(receivedAmount)?receivedAmount:null,capture_method:method??null,installments:Number.isFinite(installments)?installments:null});
+      return json({paid:false,pending:true,error:"A InfinitePay confirmou a transação, mas os dados não conferem: valor esperado R$ "+(expectedAmount/100).toFixed(2).replace(".",",")+", valor informado "+(Number.isFinite(receivedAmount)?"R$ "+(receivedAmount/100).toFixed(2).replace(".",","):"inválido")+", método "+String(method||"não informado")+". O pedido ficou bloqueado por segurança."},409);
+    }
     await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(order),{
       method:"PATCH",body:JSON.stringify({status:"pago",transaction_nsu:transaction,invoice_slug:slug,confirmado_em:new Date().toISOString(),itens:{...rows[0].itens,capture_method:method,installments,paid_amount:Number(result.paid_amount||result.amount)}})
     });
