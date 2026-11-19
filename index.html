@@ -739,27 +739,54 @@ async function startInfinitePayCheckout(){
   window.location.assign(data.url);
  }catch(error){showToast(error.message||'Falha ao iniciar o pagamento.');button.disabled=false;button.textContent='CONTINUAR PARA PAGAMENTO SEGURO'}
 }
+async function verifyInfinitePayReturn(attempts=10){
+ const params=new URLSearchParams(window.location.search);
+ const order_nsu=params.get('order_nsu'),transaction_nsu=params.get('transaction_nsu'),slug=params.get('slug'),capture_method=params.get('capture_method');
+ if(!['credit_card','pix'].includes(capture_method)||!order_nsu||!transaction_nsu||!slug)throw new Error('Não recebemos todos os dados para confirmar o pagamento. Entre em contato com o atendimento.');
+ const button=el('cardPayButton');
+ let lastMessage='A InfinitePay ainda está processando a confirmação.';
+ for(let attempt=1;attempt<=attempts;attempt++){
+  if(button)button.textContent=attempt===1?'Conferindo pagamento...':'Aguardando confirmação ('+attempt+'/'+attempts+')';
+  try{
+   const response=await fetch('/api/infinitepay/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order_nsu,transaction_nsu,slug})});
+   const data=await response.json().catch(()=>({}));
+   if(response.ok&&data.paid===true){
+    cart=(data.items||[]).map(item=>({name:item.name,price:Number(item.price_centavos)/100,qty:Number(item.quantity)}));
+    cardPaymentDetails={installments:data.capture_method==='credit_card'?Number(data.installments):null,amount:Number(data.amount),paidAmount:Number(data.paid_amount||data.amount)};
+    if(!cart.length||!['SA1','NA1'].includes(data.server))throw new Error('Pagamento confirmado, mas não foi possível recuperar os dados do pedido. Fale com o atendimento.');
+    el('cartServer').value=data.server;renderCart();el('pixTotalValue').textContent=money(grandTotal());paymentConfirmed=true;paymentMethod=data.capture_method==='credit_card'?'card':'pix';
+    el('cardPaymentStatus').textContent='✓ Pagamento via '+(paymentMethod==='card'?'cartão':'PIX')+' confirmado pela InfinitePay.';
+    document.querySelector('#pane2 .warning').textContent='Pagamento confirmado pela InfinitePay. A equipe verificará o status do anúncio antes de liberar a entrega.';
+    el('stepTab1').classList.remove('active');el('stepTab2').classList.add('active');
+    goStep(2);showToast('Pagamento confirmado! Envie o print para concluir o pedido.');
+    if(button){button.disabled=true;button.textContent='PAGAMENTO CONFIRMADO'}
+    return true;
+   }
+   lastMessage=data.error||'A InfinitePay ainda não confirmou o pagamento.';
+   if(response.status>=400&&response.status!==409&&response.status!==404)lastMessage=data.error||'Não foi possível consultar a confirmação agora.';
+  }catch(error){lastMessage=error.message||'Falha temporária ao consultar o pagamento.'}
+  if(attempt<attempts)await new Promise(resolve=>setTimeout(resolve,2000));
+ }
+ throw new Error(lastMessage+' Você pode consultar novamente sem fazer outro pagamento.');
+}
+async function retryInfinitePayConfirmation(){
+ const button=el('cardPayButton');button.disabled=true;
+ try{await verifyInfinitePayReturn(10)}
+ catch(error){el('cardPaymentStatus').textContent=error.message;button.disabled=false;button.textContent='CONSULTAR PAGAMENTO NOVAMENTE';showToast(error.message)}
+}
 async function handleInfinitePayReturn(){
  const params=new URLSearchParams(window.location.search);
  if(params.get('infinitepay')!=='return')return;
- const order_nsu=params.get('order_nsu'),transaction_nsu=params.get('transaction_nsu'),slug=params.get('slug'),capture_method=params.get('capture_method');
+ const capture_method=params.get('capture_method');
  el('checkout').classList.add('checkout-open');el('cartPage').style.display='none';document.body.classList.add('subpage-active');
  setPaymentMethod(capture_method==='credit_card'?'card':'pix');
  el('cardPaymentStatus').textContent='Conferindo o pagamento com a InfinitePay...';el('cardPayButton').disabled=true;
- try{
-  if(!['credit_card','pix'].includes(capture_method)||!order_nsu||!transaction_nsu||!slug)throw new Error('Não recebemos todos os dados para confirmar o pagamento. Entre em contato com o atendimento.');
-  const response=await fetch('/api/infinitepay/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order_nsu,transaction_nsu,slug})});
-  const data=await response.json().catch(()=>({}));
-  if(!response.ok||data.paid!==true)throw new Error(data.error||'O pagamento ainda não foi confirmado. Aguarde alguns instantes e tente novamente.');
-  cart=(data.items||[]).map(item=>({name:item.name,price:Number(item.price_centavos)/100,qty:Number(item.quantity)}));
-  cardPaymentDetails={installments:data.capture_method==='credit_card'?Number(data.installments):null,amount:Number(data.amount),paidAmount:Number(data.paid_amount||data.amount)};
-  if(!cart.length||!['SA1','NA1'].includes(data.server))throw new Error('Pagamento confirmado, mas não foi possível recuperar os dados do pedido. Fale com o atendimento.');
-  el('cartServer').value=data.server;renderCart();el('pixTotalValue').textContent=money(grandTotal());paymentConfirmed=true;paymentMethod=data.capture_method==='credit_card'?'card':'pix';
-  el('cardPaymentStatus').textContent='✓ Pagamento via '+(paymentMethod==='card'?'cartão':'PIX')+' confirmado pela InfinitePay.';
-  document.querySelector('#pane2 .warning').textContent='Pagamento confirmado pela InfinitePay. A equipe verificará o status do anúncio antes de liberar a entrega.';
-  el('stepTab1').classList.remove('active');el('stepTab2').classList.add('active');
-  goStep(2);showToast('Pagamento confirmado! Envie o print para concluir o pedido.');
- }catch(error){el('cardPaymentStatus').textContent=error.message;el('cardPayButton').disabled=false;el('cardPayButton').textContent='TENTAR NOVAMENTE';showToast(error.message)}
+ try{await verifyInfinitePayReturn(10)}
+ catch(error){
+  el('cardPaymentStatus').textContent=error.message;
+  const button=el('cardPayButton');button.disabled=false;button.textContent='CONSULTAR PAGAMENTO NOVAMENTE';button.onclick=retryInfinitePayConfirmation;
+  showToast(error.message);
+ }
 }
 function closeCheckout(){el('checkout').classList.remove('checkout-open');}
 function goStep(n){if(!cart.length){showToast('Adicione um pacote antes de finalizar.');showPage('cart');return}if(n===2&&!paymentConfirmed){showToast('Confirme o pagamento para liberar o envio do print.');return}currentStep=n;[1,2].forEach(i=>{el('pane'+i).classList.toggle('active',i===n);el('stepTab'+i).classList.toggle('active',i===n)});if(n===2)el('orderSuccess').classList.remove('show')}
