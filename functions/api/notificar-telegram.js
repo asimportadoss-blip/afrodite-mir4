@@ -7,7 +7,7 @@ export async function onRequest({request,env}){
   if(!token||!chatId){console.error("Telegram credentials are not configured");return json({success:true,warning:"Telegram não configurado."},200)}
   const tipo=body.tipo==="novo_pedido"?"novo_pedido":"mensagem";
   const texto=tipo==="novo_pedido"
-   ? "🔔 NOVO PEDIDO PAGO - AFRODITE MIR4\nPedido: "+(body.pedido_id||"—")+"\nPacote: "+(body.pacote||"—")+"\nValor: "+(body.valor_total||"—")+"\nServidor: "+(body.servidor||"—")+"\nAcesse o Painel Admin para entregar!"
+   ? ["🔔 NOVO PEDIDO PAGO - AFRODITE MIR4","Pedido: "+(body.pedido_id||"—"),"Pacote: "+(body.pacote||"—"),"Valor: "+(body.valor_total||"—"),"Servidor: "+(body.servidor||"—"),"Status do item no mercado: "+(body.status_item_mercado||"—"),"Print: "+(body.print_url||"ver no Painel Admin"),"Resumo: "+String(body.mensagem||"").slice(0,1200),"Acesse o Painel Admin para entregar!"].join("\n")
    : "💬 NOVA MENSAGEM NO CHAT - AFRODITE MIR4\nCliente: "+(body.cliente_nome||"Cliente")+"\nMensagem: \""+String(body.mensagem||"").slice(0,1000)+"\"\nAcesse o Painel Admin para responder!";
   const response=await fetch("https://api.telegram.org/bot"+token+"/sendMessage",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chat_id:chatId,text:texto})});
   if(!response.ok)console.error("Telegram API returned an error",{status:response.status,body:(await response.text()).slice(0,300)});
