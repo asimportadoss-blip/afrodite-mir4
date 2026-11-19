@@ -805,7 +805,13 @@ async function verifyInfinitePayReturn(attempts=10){
  const transaction_nsu=hasCurrentParams?(params.get('transaction_nsu')||params.get('transaction_id')||''):(savedReturn.transaction_nsu||savedReturn.transaction_id||'');
  const slug=hasCurrentParams?(params.get('slug')||''):(savedReturn.slug||''),capture_method=hasCurrentParams?(params.get('capture_method')||''):(savedReturn.capture_method||''),receipt_url=hasCurrentParams?(params.get('receipt_url')||''):(savedReturn.receipt_url||'');
  const returned={order_nsu,pedido_id:order_nsu,transaction_nsu,transaction_id:transaction_nsu,slug,capture_method,receipt_url,saved_at:Date.now()};
- if(hasCurrentParams||order_nsu||transaction_nsu||slug||capture_method||receipt_url){localStorage.setItem(INFINITEPAY_RETURN_KEY,JSON.stringify(returned));window.infinitePayReturnParams=returned;}
+ if(hasCurrentParams||order_nsu||transaction_nsu||slug||capture_method||receipt_url){
+  localStorage.setItem(INFINITEPAY_RETURN_KEY,JSON.stringify(returned));
+  if(order_nsu)localStorage.setItem('afrodite_infinitepay_order_nsu',order_nsu);
+  if(transaction_nsu)localStorage.setItem('afrodite_infinitepay_transaction_nsu',transaction_nsu);
+  if(slug)localStorage.setItem('afrodite_infinitepay_slug',slug);
+  window.infinitePayReturnParams=returned;
+ }
  if(!cart.length&&Array.isArray(pending?.items)&&pending.items.length)cart=pending.items.map(x=>({...x}));
  if(!cart.length&&Array.isArray(savedCart)&&savedCart.length)cart=savedCart.map(x=>({...x}));
  if(pending?.server&&el('cartServer'))el('cartServer').value=pending.server;
