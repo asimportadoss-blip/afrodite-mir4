@@ -16,9 +16,9 @@ export async function onRequest({request,env}) {
     const slug=String(event.invoice_slug||event.slug||"");
     const eventAmount=Number(event.paid_amount??event.amount??0);
     console.log("InfinitePay webhook recebido",{fields:Object.keys(event||{}),has_order:!!order,has_transaction:!!transaction,has_slug:!!slug,paid:event.paid===true,has_positive_amount:Number.isFinite(eventAmount)&&eventAmount>0});
-    if(!/^AFR-[0-9a-f-]{36}$/i.test(order)) {
-      console.error("Webhook sem order_nsu válido",{has_order:!!order});
-      return json({success:true,ignored:true,reason:"invalid_order_nsu"});
+    if(!order.trim()) {
+      console.error("Webhook sem order_nsu",{has_order:false});
+      return json({success:true,ignored:true,reason:"missing_order_nsu"});
     }
     const rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&order_nsu=eq."+encodeURIComponent(order));
     if(!rows?.length) return json({success:true,ignored:true,reason:"order_not_found"});
@@ -53,7 +53,8 @@ export async function onRequest({request,env}) {
     const raw=await response.text();
     let result=null;try{result=raw?JSON.parse(raw):null}catch{result={raw_response:raw};}
     console.log("InfinitePay webhook payment_check diagnóstico",{http_status:response.status,sent,response:result});
-    if(!response.ok||result?.success===false||result?.paid!==true) {
+    const providerPaid=result?.paid===true||Number(result?.paid_amount)>0;
+    if(!response.ok||!providerPaid) {
       return json({success:true,received:true,confirmed:false,awaiting_validation:true,diagnostic:{enviado:sent,resposta_http:response.status,resposta:result}});
     }
     const method=result.capture_method;
