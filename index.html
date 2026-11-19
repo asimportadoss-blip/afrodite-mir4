@@ -727,17 +727,20 @@ const el=id=>document.getElementById(id),money=n=>n.toLocaleString('pt-BR',{styl
 const INFINITEPAY_RETURN_KEY='afrodite_infinitepay_return';
 function saveInfinitePayReturnParams(){
  const p=new URLSearchParams(window.location.search);
+ const keys=['order_nsu','pedido_id','transaction_nsu','transaction_id','slug','capture_method','receipt_url'];
+ const hasCurrentParams=keys.some(key=>p.has(key));
  const previous=(()=>{try{return JSON.parse(localStorage.getItem(INFINITEPAY_RETURN_KEY)||'{}')}catch{return {}}})();
- const returned={
-  order_nsu:p.get('order_nsu')||p.get('pedido_id')||previous.order_nsu||'',
-  pedido_id:p.get('pedido_id')||p.get('order_nsu')||previous.pedido_id||'',
-  transaction_nsu:p.get('transaction_nsu')||previous.transaction_nsu||'',
-  slug:p.get('slug')||previous.slug||'',
-  capture_method:p.get('capture_method')||previous.capture_method||'',
-  receipt_url:p.get('receipt_url')||previous.receipt_url||'',
+ const returned=hasCurrentParams?{
+  order_nsu:p.get('order_nsu')||p.get('pedido_id')||'',
+  pedido_id:p.get('pedido_id')||p.get('order_nsu')||'',
+  transaction_nsu:p.get('transaction_nsu')||p.get('transaction_id')||'',
+  transaction_id:p.get('transaction_id')||p.get('transaction_nsu')||'',
+  slug:p.get('slug')||'',
+  capture_method:p.get('capture_method')||'',
+  receipt_url:p.get('receipt_url')||'',
   saved_at:Date.now()
- };
- if(returned.order_nsu||returned.transaction_nsu||returned.slug||returned.capture_method||returned.receipt_url){
+ }:{...previous};
+ if(hasCurrentParams){
   localStorage.setItem(INFINITEPAY_RETURN_KEY,JSON.stringify(returned));
   window.infinitePayReturnParams=returned;
  }
@@ -777,6 +780,9 @@ async function startInfinitePayCheckout(){
  if(!cart.length){showToast('Sua sacola está vazia.');return}
  const button=el('cardPayButton');button.disabled=true;button.textContent='Preparando pagamento...';
  try{
+  // Um novo checkout nunca pode herdar identificadores de uma cobrança anterior.
+  ['pedido_pendente',INFINITEPAY_RETURN_KEY,'afrodite_infinitepay_order_nsu','afrodite_infinitepay_transaction_nsu','afrodite_infinitepay_slug'].forEach(key=>localStorage.removeItem(key));
+  window.infinitePayReturnParams=null;
   if(!chatSession)await loadCustomerChat();
   const response=await fetch('/api/infinitepay/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({server:el('cartServer').value,atendimento_id:chatSession?.id||null,items:cart.map(x=>({name:x.name,qty:x.qty}))})});
   const data=await response.json().catch(()=>({}));
@@ -792,9 +798,12 @@ async function verifyInfinitePayReturn(attempts=10){
  const pending=(()=>{try{return JSON.parse(localStorage.getItem('pedido_pendente')||'null')}catch{return null}})();
  const savedCart=(()=>{try{return JSON.parse(localStorage.getItem('afrodite_cart_pending')||'[]')}catch{return []}})();
  const savedReturn=(()=>{try{return JSON.parse(localStorage.getItem(INFINITEPAY_RETURN_KEY)||'{}')}catch{return {}}})();
- const order_nsu=params.get('pedido_id')||params.get('order_nsu')||params.get('id')||savedReturn.order_nsu||savedReturn.pedido_id||pending?.order_nsu||localStorage.getItem('afrodite_infinitepay_order_nsu'),transaction_nsu=params.get('transaction_nsu')||savedReturn.transaction_nsu,slug=params.get('slug')||savedReturn.slug,capture_method=params.get('capture_method')||savedReturn.capture_method,receipt_url=params.get('receipt_url')||savedReturn.receipt_url;
- const returned={order_nsu,pedido_id:order_nsu,transaction_nsu,slug,capture_method,receipt_url,saved_at:Date.now()};
- if(order_nsu||transaction_nsu||slug||capture_method||receipt_url){localStorage.setItem(INFINITEPAY_RETURN_KEY,JSON.stringify(returned));window.infinitePayReturnParams=returned;}
+ const hasCurrentParams=['order_nsu','pedido_id','transaction_nsu','transaction_id','slug','capture_method','receipt_url'].some(key=>params.has(key));
+ const order_nsu=hasCurrentParams?(params.get('order_nsu')||params.get('pedido_id')||params.get('id')||''):(savedReturn.order_nsu||savedReturn.pedido_id||pending?.order_nsu||localStorage.getItem('afrodite_infinitepay_order_nsu'));
+ const transaction_nsu=hasCurrentParams?(params.get('transaction_nsu')||params.get('transaction_id')||''):(savedReturn.transaction_nsu||savedReturn.transaction_id||'');
+ const slug=hasCurrentParams?(params.get('slug')||''):(savedReturn.slug||''),capture_method=hasCurrentParams?(params.get('capture_method')||''):(savedReturn.capture_method||''),receipt_url=hasCurrentParams?(params.get('receipt_url')||''):(savedReturn.receipt_url||'');
+ const returned={order_nsu,pedido_id:order_nsu,transaction_nsu,transaction_id:transaction_nsu,slug,capture_method,receipt_url,saved_at:Date.now()};
+ if(hasCurrentParams||order_nsu||transaction_nsu||slug||capture_method||receipt_url){localStorage.setItem(INFINITEPAY_RETURN_KEY,JSON.stringify(returned));window.infinitePayReturnParams=returned;}
  if(!cart.length&&Array.isArray(pending?.items)&&pending.items.length)cart=pending.items.map(x=>({...x}));
  if(!cart.length&&Array.isArray(savedCart)&&savedCart.length)cart=savedCart.map(x=>({...x}));
  if(pending?.server&&el('cartServer'))el('cartServer').value=pending.server;
@@ -842,7 +851,7 @@ function startInfinitePayStatusPolling(){
   infinitePayPollBusy=true;
   try{await verifyInfinitePayReturn(1)}catch(error){if(el('cardPaymentStatus')&&!error.message.includes('pedido pendente'))el('cardPaymentStatus').textContent=error.message}
   finally{infinitePayPollBusy=false}
- },3000);
+ },4000);
 }
 async function retryInfinitePayConfirmation(){
  const button=el('cardPayButton');button.disabled=true;
@@ -852,7 +861,7 @@ async function retryInfinitePayConfirmation(){
 }
 async function handleInfinitePayReturn(){
  const params=new URLSearchParams(window.location.search);
- if(params.get('infinitepay')!=='return'&&params.get('retorno_pagamento')!=='1'&&!params.get('pedido_id')&&!params.get('order_nsu')&&!params.get('transaction_nsu')&&!params.get('slug')&&!params.get('capture_method')&&!params.get('receipt_url'))return;
+ if(params.get('infinitepay')!=='return'&&params.get('retorno_pagamento')!=='1'&&!params.get('pedido_id')&&!params.get('order_nsu')&&!params.get('transaction_nsu')&&!params.get('transaction_id')&&!params.get('slug')&&!params.get('capture_method')&&!params.get('receipt_url'))return;
  const capture_method=params.get('capture_method');
  el('checkout').classList.add('checkout-open');el('cartPage').style.display='none';document.body.classList.add('subpage-active');
  setPaymentMethod(capture_method==='credit_card'?'card':'pix');
