@@ -24,7 +24,7 @@ export async function onRequest({request,env}){
   const url=new URL(request.url),admin=url.searchParams.get("admin")==="1";
   if(request.method==="GET"&&admin){
    if(!await adminValid(request,env))return json({error:"Acesso administrativo não autorizado."},401);
-   const rows=await db(env,"atendimentos?select=*&order=atualizado_em.desc");
+   const rows=await db(env,"atendimentos?select=id,nome_do_cliente,servidor,pacote,valor_total,status_item_mercado,print_url,status_pedido,%22última_mensagem%22,nao_lidas,atualizado_em&order=atualizado_em.desc");
    const selected=url.searchParams.get("atendimento_id");
    if(selected){const msgs=await db(env,"mensagens?select=id,atendimento_id,referente,texto,criado_em&atendimento_id=eq."+encodeURIComponent(selected)+"&order=criado_em.asc");return json({atendimento:rows.find(x=>x.id===selected)||null,mensagens:msgs})}
    return json({atendimentos:rows});
