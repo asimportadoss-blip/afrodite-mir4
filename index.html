@@ -647,6 +647,20 @@ body.admin-route>header,body.admin-route>main:not(#adminApp),body.admin-route>fo
  .business-hours-banner span{font-size:14px;white-space:normal;line-height:1.4}
 }
 
+
+/* Acompanhamento de pedidos e filtros do painel */
+.chat-order-status{padding:10px 12px;background:#21180f;border-bottom:1px solid #72501f;color:#ffe2a0;font-size:11px;line-height:1.5}
+.chat-order-status strong{color:#ffd166}
+.adm-filter-wrap{padding:10px 13px;border-bottom:1px solid #26363d;background:#142129}
+.adm-filter-wrap label{display:block;margin-bottom:6px;color:#aebac0;font-size:10px}
+.adm-filter-wrap select,.adm-order-actions select{width:100%;padding:9px;border:1px solid #3b565d;border-radius:7px;background:#0b171d;color:#e9edef;font-size:11px}
+.adm-order-actions{margin-top:12px;padding-top:10px;border-top:1px solid #34434b}
+.adm-order-actions label{display:block;margin-bottom:7px;color:#d6ad62;font-size:11px;font-weight:700}
+.adm-order-actions>div{display:flex;gap:8px}
+.adm-order-actions select{flex:1;min-width:0}
+.adm-order-actions button{padding:8px 12px;border:0;border-radius:7px;background:#00a884;color:#06251e;font-size:11px;font-weight:800;cursor:pointer}
+.adm-order-actions small{display:block;margin-top:7px;color:#9eafb5;font-size:10px}
+@media(max-width:800px){.adm-topbar{flex-wrap:wrap}.adm-stats{order:3;flex-basis:100%;overflow:auto}.adm-content{grid-template-columns:1fr;grid-template-rows:minmax(150px,32vh) minmax(0,1fr)}.adm-sidebar{min-height:0}.adm-contacts{min-height:0}.adm-conversation{min-height:55vh}}
 </style>
 </head>
 <body>
@@ -691,8 +705,8 @@ body.admin-route>header,body.admin-route>main:not(#adminApp),body.admin-route>fo
 </aside>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <button class="chat-launch" onclick="openChat()" aria-label="Abrir Chat Online"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3H13a8.5 8.5 0 0 1 8 8v.5Z"/></svg><span>Chat Online</span></button>
-<aside class="chat" id="chat"><div class="chat-head"><div class="avatar">AM</div><div><b>Atendente Afrodite</b><small>● Atendimento online</small></div><button class="close" onclick="closeChat()">×</button></div><div class="chat-messages" id="chatMessages"><div class="bubble">Olá! Informe sua dúvida ou pedido. Nossa equipe poderá responder por este atendimento.</div></div><div class="chat-form"><input id="chatInput" placeholder="Digite sua mensagem..." onkeydown="if(event.key==='Enter')sendChat()"><button class="gold-btn" onclick="sendChat()">ENVIAR</button></div><div class="chat-hint">Conversa Afrodite. Não envie senhas ou dados bancários.</div></aside>
-<main id="adminApp" aria-live="polite"><section id="adminLoginScreen" class="adm-login-screen"><div class="adm-login-card"><div class="adm-brand-mark">A</div><p class="adm-eyebrow">AFRODITE MIR4</p><h1>Acesso Restrito</h1><p>Área exclusiva da administração da loja.</p><form id="admLoginForm"><input id="admUser" type="text" autocomplete="username" placeholder="Usuário" required><input id="admPassword" type="password" autocomplete="current-password" placeholder="Senha do administrador" required><button id="admLoginButton" type="submit">Entrar no painel</button></form><p id="admLoginError" class="adm-error"></p><a href="/" class="adm-back-link">← Voltar para a loja</a></div></section><section id="adminWorkspace" class="adm-workspace" hidden><header class="adm-topbar"><div class="adm-top-brand"><span class="adm-brand-mark small">A</span><div><b>Afrodite MIR4</b><small>Central de atendimento</small></div></div><div class="adm-stats"><div class="adm-stat"><small>Pedidos</small><strong id="admOrdersCount">0</strong></div><div class="adm-stat"><small>Conversas Ativas</small><strong id="admChatsCount">0</strong></div><div class="adm-stat"><small>Total em Vendas</small><strong id="admSalesTotal">R$ 0,00</strong></div></div><button id="admLogout" class="adm-logout">Sair / Voltar para Loja</button></header><div class="adm-content"><aside class="adm-sidebar"><div class="adm-sidebar-head"><h2>Conversas e pedidos</h2><span id="admContactCount">0</span></div><div id="admContacts" class="adm-contacts"><p class="adm-empty">Nenhum cliente por enquanto.</p></div></aside><section class="adm-conversation"><div id="admWelcome" class="adm-welcome"><div class="adm-welcome-icon">✦</div><h2>Atendimento Afrodite</h2><p>Selecione um cliente para consultar o pedido e conversar.</p></div><div id="admSelected" class="adm-selected" hidden><div class="adm-chat-header"><div class="adm-contact-avatar" id="admAvatar">C</div><div><b id="admCustomerName">Cliente</b><small id="admCustomerMeta">Pedido e atendimento</small></div></div><div class="adm-order-card" id="admOrderCard"><b>Dados do pedido</b><div id="admOrderData" class="adm-order-data"></div><button id="admOpenPrint" class="adm-print-button" hidden>Abrir / ampliar print do item</button></div><div id="admMessages" class="adm-messages"><p class="adm-empty">Nenhuma mensagem nesta conversa.</p></div><form id="admReplyForm" class="adm-reply-form" onsubmit="event.preventDefault();return false"><input id="admReplyInput" placeholder="Digite uma mensagem..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();replyChat()}"><button type="button" onclick="replyChat()">Enviar</button></form></div></section></div></section><div id="admImageViewer" class="adm-image-viewer" hidden><button id="admCloseImage" aria-label="Fechar">×</button><img id="admLargePrint" alt="Print do item enviado pelo cliente"></div></main></div>
+<aside class="chat" id="chat"><div class="chat-head"><div class="avatar">AM</div><div><b>Atendente Afrodite</b><small>● Atendimento online</small></div><button class="close" onclick="closeChat()">×</button></div><div class="chat-order-status" id="chatOrderStatus" hidden></div><div class="chat-messages" id="chatMessages"><div class="bubble">Olá! Informe sua dúvida ou pedido. Nossa equipe poderá responder por este atendimento.</div></div><div class="chat-form"><input id="chatInput" placeholder="Digite sua mensagem..." onkeydown="if(event.key==='Enter')sendChat()"><button class="gold-btn" onclick="sendChat()">ENVIAR</button></div><div class="chat-hint">Conversa Afrodite. Não envie senhas ou dados bancários.</div></aside>
+<main id="adminApp" aria-live="polite"><section id="adminLoginScreen" class="adm-login-screen"><div class="adm-login-card"><div class="adm-brand-mark">A</div><p class="adm-eyebrow">AFRODITE MIR4</p><h1>Acesso Restrito</h1><p>Área exclusiva da administração da loja.</p><form id="admLoginForm"><input id="admUser" type="text" autocomplete="username" placeholder="Usuário" required><input id="admPassword" type="password" autocomplete="current-password" placeholder="Senha do administrador" required><button id="admLoginButton" type="submit">Entrar no painel</button></form><p id="admLoginError" class="adm-error"></p><a href="/" class="adm-back-link">← Voltar para a loja</a></div></section><section id="adminWorkspace" class="adm-workspace" hidden><header class="adm-topbar"><div class="adm-top-brand"><span class="adm-brand-mark small">A</span><div><b>Afrodite MIR4</b><small>Central de atendimento</small></div></div><div class="adm-stats"><div class="adm-stat"><small>Pedidos</small><strong id="admOrdersCount">0</strong></div><div class="adm-stat"><small>Conversas Ativas</small><strong id="admChatsCount">0</strong></div><div class="adm-stat"><small>Total em Vendas</small><strong id="admSalesTotal">R$ 0,00</strong></div></div><button id="admLogout" class="adm-logout">Sair / Voltar para Loja</button></header><div class="adm-content"><aside class="adm-sidebar"><div class="adm-sidebar-head"><h2>Conversas e pedidos</h2><span id="admContactCount">0</span></div><div class="adm-filter-wrap"><label for="admStatusFilter">Exibir</label><select id="admStatusFilter" onchange="setAdminStatusFilter(this.value)"><option value="todos">Todos os atendimentos</option><option value="pendentes">Pendentes</option><option value="pagos">Pagos / em andamento</option><option value="entregues">Entregues</option></select></div><div id="admContacts" class="adm-contacts"><p class="adm-empty">Nenhum cliente por enquanto.</p></div></aside><section class="adm-conversation"><div id="admWelcome" class="adm-welcome"><div class="adm-welcome-icon">✦</div><h2>Atendimento Afrodite</h2><p>Selecione um cliente para consultar o pedido e conversar.</p></div><div id="admSelected" class="adm-selected" hidden><div class="adm-chat-header"><div class="adm-contact-avatar" id="admAvatar">C</div><div><b id="admCustomerName">Cliente</b><small id="admCustomerMeta">Pedido e atendimento</small></div></div><div class="adm-order-card" id="admOrderCard"><b>Dados do pedido</b><div id="admOrderData" class="adm-order-data"></div><div class="adm-order-actions"><label for="admStatusSelect">Atualizar situação do pedido</label><div><select id="admStatusSelect"><option value="pendente">Pendente</option><option value="pago">Pagamento confirmado</option><option value="em_andamento">Em andamento</option><option value="entregue">Entregue</option></select><button type="button" onclick="updateAdminOrderStatus()">Salvar situação</button></div><small>O status de pagamento só é confirmado pela InfinitePay.</small></div><button id="admOpenPrint" class="adm-print-button" hidden>Abrir / ampliar print do item</button></div><div id="admMessages" class="adm-messages"><p class="adm-empty">Nenhuma mensagem nesta conversa.</p></div><form id="admReplyForm" class="adm-reply-form" onsubmit="event.preventDefault();return false"><input id="admReplyInput" placeholder="Digite uma mensagem..." autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();replyChat()}"><button type="button" onclick="replyChat()">Enviar</button></form></div></section></div></section><div id="admImageViewer" class="adm-image-viewer" hidden><button id="admCloseImage" aria-label="Fechar">×</button><img id="admLargePrint" alt="Print do item enviado pelo cliente"></div></main></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -891,7 +905,15 @@ async function submitOrder(){
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 let chatSession=null,chatLoading=false,chatPollStarted=false,adminChats=[];
 async function chatApi(url,options={}){const response=await fetch(url,{credentials:"same-origin",cache:"no-store",...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||"Não foi possível acessar o atendimento.");return data}
-async function loadCustomerChat(){if(chatLoading)return;chatLoading=true;try{const data=await chatApi("/api/chat");chatSession=data.atendimento;renderBubbles(el("chatMessages"),(data.mensagens||[]).map(m=>({from:m.referente==="cliente"?"buyer":"seller",text:m.texto,time:m.criado_em})));}catch(e){el("chatMessages").textContent=e.message; }finally{chatLoading=false}}
+function renderCustomerOrderStatus(order){
+ const box=el("chatOrderStatus");if(!box)return;
+ const status=String(order?.status_pedido||"chat_ativo");
+ const labels={chat_ativo:"Atendimento iniciado",pendente:"Pedido recebido — aguardando confirmação",pago:"Pagamento confirmado — aguardando conferência do anúncio",em_andamento:"Pedido em andamento — nossa equipe está preparando a entrega",entregue:"Pedido entregue — compra concluída"};
+ const title=labels[status]||"Atendimento em andamento";
+ box.hidden=!order||!["chat_ativo","pendente","pago","em_andamento","entregue"].includes(status);
+ box.innerHTML="<strong>Situação do pedido:</strong> "+escapeHtml(title)+(order?.id?"<br><span>Pedido: "+escapeHtml(order.id)+"</span>":"");
+}
+async function loadCustomerChat(){if(chatLoading)return;chatLoading=true;try{const data=await chatApi("/api/chat");chatSession=data.atendimento;renderCustomerOrderStatus(chatSession);renderBubbles(el("chatMessages"),(data.mensagens||[]).map(m=>({from:m.referente==="cliente"?"buyer":"seller",text:m.texto,time:m.criado_em})));}catch(e){el("chatMessages").textContent=e.message; }finally{chatLoading=false}}
 function openChat(prefill=''){el('chat').classList.add('open');if(prefill){el('chatInput').value=prefill;el('chatInput').focus()}loadCustomerChat();if(!chatPollStarted){chatPollStarted=true;setInterval(()=>{if(el('chat').classList.contains('open'))loadCustomerChat();if(admAuthenticated)refreshAdminChats()},4000)}}
 function closeChat(){el('chat').classList.remove('open')}
 async function sendChat(){const input=el('chatInput'),text=input.value.trim();if(!text)return;try{if(!chatSession)await loadCustomerChat();if(!chatSession)throw new Error("Não foi possível iniciar seu atendimento.");await chatApi("/api/chat",{method:"POST",body:JSON.stringify({atendimento_id:chatSession.id,text})});input.value='';await loadCustomerChat()}catch(e){showToast(e.message)}}
@@ -916,8 +938,72 @@ function openAdmin(){window.location.href='/adm'}
 function closeAdmin(){window.location.href='/'}
 function loginAdmin(){const form=el('adminPassword');if(form)form.value='';}
 async function refreshAdminChats(){if(!admAuthenticated)return;try{const data=await chatApi('/api/chat?admin=1');adminChats=data.atendimentos||[];renderAdmin();if(admSelectedOrder)await renderAdminChat()}catch(e){console.warn('Falha ao atualizar conversas:',e.message)}}
-function renderAdmin(){if(!admAuthenticated)return;const orders=getOrders(),total=orders.reduce((sum,o)=>sum+Number(o.total||0),0);el('admOrdersCount').textContent=orders.length;el('admChatsCount').textContent=adminChats.length;el('admSalesTotal').textContent=money(total);const list=el('admContacts');list.innerHTML='';el('admContactCount').textContent=adminChats.length;if(!adminChats.length){list.innerHTML='<p class="adm-empty">Nenhum cliente por enquanto.</p>';el('admWelcome').hidden=false;el('admSelected').hidden=true;return}adminChats.forEach(c=>{const b=document.createElement('button');b.type='button';b.className='adm-contact'+(admSelectedOrder===c.id?' active':'');const name=c.nome_do_cliente||'Visitante MIR4';const avatar=document.createElement('span');avatar.className='adm-contact-avatar';avatar.textContent=name.charAt(0).toUpperCase();const main=document.createElement('span');main.className='adm-contact-main';const line=document.createElement('span');line.className='adm-contact-line';const title=document.createElement('b');title.textContent=name;const time=document.createElement('small');time.textContent=c.atualizado_em?new Date(c.atualizado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';line.append(title,time);const sub=document.createElement('span');sub.className='adm-contact-sub';const preview=document.createElement('span');preview.textContent=c['última_mensagem']||'Atendimento iniciado';const price=document.createElement('span');price.textContent=c.valor_total?money(c.valor_total):'Chat';sub.append(preview,price);main.append(line,sub);b.append(avatar,main);if(Number(c.nao_lidas)>0){const dot=document.createElement('i');dot.className='adm-unread';b.append(dot)}b.onclick=()=>selectAdminContact(c.id);list.append(b)});if(!admSelectedOrder||!adminChats.some(c=>c.id===admSelectedOrder))selectAdminContact(adminChats[0].id,false)}
-async function selectAdminContact(id,rerender=true){admSelectedOrder=id;const c=adminChats.find(x=>x.id===id)||{};el('admWelcome').hidden=true;el('admSelected').hidden=false;el('admCustomerName').textContent=c.nome_do_cliente||'Visitante MIR4';el('admCustomerMeta').textContent='Atendimento '+id;el('admAvatar').textContent=(el('admCustomerName').textContent||'C').charAt(0).toUpperCase();const data=el('admOrderData');data.innerHTML='';const fields=[['Servidor',c.servidor||'—'],['Pacote',c.pacote||'—'],['Total',c.valor_total?money(c.valor_total):'—'],['Status do item',c.status_item_mercado||'—'],['Status',c.status_pedido||'Atendimento ativo']];fields.forEach(([k,v])=>{const span=document.createElement('span');span.innerHTML='<b>'+escapeHtml(k)+':</b> '+escapeHtml(v);data.append(span)});const printButton=el('admOpenPrint');printButton.hidden=!c.print_url;printButton.onclick=()=>{el('admLargePrint').src=c.print_url;el('admImageViewer').hidden=false};if(rerender){document.querySelectorAll('.adm-contact').forEach(b=>b.classList.remove('active'));}await renderAdminChat()}
+let admStatusFilter="todos";
+function setAdminStatusFilter(value){admStatusFilter=["todos","pendentes","pagos","entregues"].includes(value)?value:"todos";renderAdmin()}
+function adminStatusLabel(status){return ({chat_ativo:"Atendimento iniciado",pendente:"Pendente",pago:"Pagamento confirmado",em_andamento:"Em andamento",entregue:"Entregue"})[status]||"Atendimento ativo"}
+function renderAdmin(){
+ if(!admAuthenticated)return;
+ const orders=adminChats.filter(c=>["pendente","pago","em_andamento","entregue"].includes(String(c.status_pedido||"")));
+ const total=orders.filter(c=>["pago","em_andamento","entregue"].includes(c.status_pedido)).reduce((sum,c)=>sum+Number(c.valor_total||0),0);
+ el("admOrdersCount").textContent=orders.length;
+ el("admChatsCount").textContent=adminChats.length;
+ el("admSalesTotal").textContent=money(total);
+ const list=el("admContacts");list.innerHTML="";
+ const filtered=adminChats.filter(c=>{
+  const status=String(c.status_pedido||"chat_ativo");
+  if(admStatusFilter==="pendentes")return ["chat_ativo","pendente"].includes(status);
+  if(admStatusFilter==="pagos")return ["pago","em_andamento"].includes(status);
+  if(admStatusFilter==="entregues")return status==="entregue";
+  return true;
+ });
+ el("admContactCount").textContent=filtered.length;
+ if(!filtered.length){
+  list.innerHTML='<p class="adm-empty">Nenhum atendimento nesta categoria.</p>';
+  if(!adminChats.length){el("admWelcome").hidden=false;el("admSelected").hidden=true}
+  return;
+ }
+ filtered.forEach(c=>{
+  const b=document.createElement("button");b.type="button";b.className="adm-contact"+(admSelectedOrder===c.id?" active":"");
+  const name=c.nome_do_cliente||"Visitante MIR4";
+  const avatar=document.createElement("span");avatar.className="adm-contact-avatar";avatar.textContent=name.charAt(0).toUpperCase();
+  const main=document.createElement("span");main.className="adm-contact-main";
+  const line=document.createElement("span");line.className="adm-contact-line";
+  const title=document.createElement("b");title.textContent=name;
+  const time=document.createElement("small");time.textContent=c.atualizado_em?new Date(c.atualizado_em).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"";
+  line.append(title,time);
+  const sub=document.createElement("span");sub.className="adm-contact-sub";
+  const preview=document.createElement("span");preview.textContent=c["última_mensagem"]||adminStatusLabel(c.status_pedido||"chat_ativo");
+  const price=document.createElement("span");price.textContent=c.valor_total?money(c.valor_total):adminStatusLabel(c.status_pedido||"chat_ativo");
+  sub.append(preview,price);main.append(line,sub);b.append(avatar,main);
+  if(Number(c.nao_lidas)>0){const dot=document.createElement("i");dot.className="adm-unread";b.append(dot)}
+  b.onclick=()=>selectAdminContact(c.id);list.append(b);
+ });
+ if(!admSelectedOrder||!filtered.some(c=>c.id===admSelectedOrder))selectAdminContact(filtered[0].id,false);
+}
+async function selectAdminContact(id,rerender=true){
+ admSelectedOrder=id;const c=adminChats.find(x=>x.id===id)||{};
+ el("admWelcome").hidden=true;el("admSelected").hidden=false;
+ el("admCustomerName").textContent=c.nome_do_cliente||"Visitante MIR4";
+ el("admCustomerMeta").textContent="Atendimento "+id;
+ el("admAvatar").textContent=(el("admCustomerName").textContent||"C").charAt(0).toUpperCase();
+ const data=el("admOrderData");data.innerHTML="";
+ const fields=[["Servidor",c.servidor||"—"],["Pacote",c.pacote||"—"],["Total",c.valor_total?money(c.valor_total):"—"],["Status do item",c.status_item_mercado||"—"],["Situação",adminStatusLabel(c.status_pedido||"chat_ativo")]];
+ fields.forEach(([k,v])=>{const span=document.createElement("span");span.innerHTML="<b>"+escapeHtml(k)+":</b> "+escapeHtml(v);data.append(span)});
+ const statusSelect=el("admStatusSelect");if(statusSelect)statusSelect.value=["pendente","pago","em_andamento","entregue"].includes(c.status_pedido)?c.status_pedido:"pendente";
+ const printButton=el("admOpenPrint");printButton.hidden=!c.print_url;
+ printButton.onclick=()=>{el("admLargePrint").src=c.print_url;el("admImageViewer").hidden=false};
+ if(rerender)document.querySelectorAll(".adm-contact").forEach(b=>b.classList.remove("active"));
+ await renderAdminChat();
+}
+async function updateAdminOrderStatus(){
+ if(!admSelectedOrder)return;
+ const status=el("admStatusSelect").value;
+ try{
+  await chatApi("/api/chat",{method:"PATCH",body:JSON.stringify({atendimento_id:admSelectedOrder,status_pedido:status})});
+  await refreshAdminChats();
+  showToast("Situação do pedido atualizada.");
+ }catch(error){showToast(error.message||"Não foi possível atualizar a situação.")}
+}
 async function renderAdminChat(){if(!admAuthenticated||!admSelectedOrder)return;const box=el('admMessages');try{const data=await chatApi('/api/chat?admin=1&atendimento_id='+encodeURIComponent(admSelectedOrder));const msgs=(data.mensagens||[]).map(m=>({from:m.referente==='atendente'?'seller':'buyer',text:m.texto,time:m.criado_em}));box.innerHTML='';if(!msgs.length){box.innerHTML='<p class="adm-empty">Nenhuma mensagem nesta conversa ainda.</p>';return}msgs.forEach(m=>{const b=document.createElement('div');b.className='adm-message '+(m.from==='seller'?'outgoing':'');b.textContent=m.text;const time=document.createElement('time');time.textContent=new Date(m.time||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});b.append(time);box.append(b)});box.scrollTop=box.scrollHeight}catch(e){box.textContent=e.message}}
 async function replyChat(){const input=el('admReplyInput'),text=input.value.trim();if(!text||!admSelectedOrder)return;try{await chatApi('/api/chat',{method:'POST',body:JSON.stringify({admin:true,atendimento_id:admSelectedOrder,text})});input.value='';await renderAdminChat();await refreshAdminChats()}catch(e){showToast(e.message)}}
 
