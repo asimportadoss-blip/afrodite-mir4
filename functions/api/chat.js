@@ -140,7 +140,10 @@ export async function onRequest(context){
     const duplicate=await db(env,"mensagens?select=id&atendimento_id=eq."+encodeURIComponent(atendimentoId)+"&texto=like.*"+encodeURIComponent(orderId)+"*&limit=1");
     if(duplicate.length)return json({error:"Este pedido já foi enviado ao atendimento."},409);
     const printUrl=String(body.print_url||"");
-    if(!/^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(printUrl)||printUrl.length>3000000)return json({error:"O print enviado é inválido ou excede o limite permitido."},400);
+    const isBase64Print=/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/]+=*$/i.test(printUrl)&&printUrl.length<=3000000;
+    let isStoragePrint=false;
+    try{const parsed=new URL(printUrl),base=new URL(env.SUPABASE_URL);isStoragePrint=parsed.protocol==="https:"&&parsed.origin===base.origin&&parsed.pathname.startsWith("/storage/v1/object/public/prints-pedidos/")}catch{}
+    if(!isBase64Print&&!isStoragePrint)return json({error:"O print enviado é inválido ou não pertence ao Storage da loja."},400);
     const claim=await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(orderId)+"&status=eq.pago&itens->>pedido_enviado_em=is.null",{method:"PATCH",body:JSON.stringify({itens:{...details,pedido_enviado_em:now}})});
     if(!claim.length)return json({error:"Este pedido já está sendo enviado ou foi concluído anteriormente."},409);
     patch.servidor=String(details.server).slice(0,80);
@@ -153,7 +156,10 @@ export async function onRequest(context){
    let inserted;
    try{
     await db(env,"atendimentos?id=eq."+encodeURIComponent(atendimentoId),{method:"PATCH",body:JSON.stringify(patch)});
-    inserted=await db(env,"mensagens",{method:"POST",body:JSON.stringify({atendimento_id:atendimentoId,remetente:referente,texto})});
+    const messageRows=referente==="cliente"&&body.order_complete===true
+     ? [{atendimento_id:atendimentoId,remetente:referente,texto},{atendimento_id:atendimentoId,remetente:referente,texto:"PRINT_URL:"+patch.print_url,criado_em:new Date(Date.now()+1).toISOString()}]
+     : {atendimento_id:atendimentoId,remetente:referente,texto};
+    inserted=await db(env,"mensagens",{method:"POST",body:JSON.stringify(messageRows)});
    }catch(error){
     if(referente==="cliente"&&body.order_complete===true){
      const orderId=String(body.order_id||"");
