@@ -701,6 +701,26 @@ const PIX_KEY='69391561000165',PIX_NAME='AFRODITE MIR4',PIX_CITY='OLINDA',DB_KEY
 let firebaseDb=null,firebaseEnabled=false,cardPaymentDetails=null;
 let cart=[],currentStep=1,selectedFile=null,pixReceiptFile=null,adminOpen=false,activeOrder=null,toastTimer=null,paymentConfirmed=false,paymentMethod='pix';
 const el=id=>document.getElementById(id),money=n=>n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const INFINITEPAY_RETURN_KEY='afrodite_infinitepay_return';
+function saveInfinitePayReturnParams(){
+ const p=new URLSearchParams(window.location.search);
+ const previous=(()=>{try{return JSON.parse(localStorage.getItem(INFINITEPAY_RETURN_KEY)||'{}')}catch{return {}}})();
+ const returned={
+  order_nsu:p.get('order_nsu')||p.get('pedido_id')||previous.order_nsu||'',
+  pedido_id:p.get('pedido_id')||p.get('order_nsu')||previous.pedido_id||'',
+  transaction_nsu:p.get('transaction_nsu')||previous.transaction_nsu||'',
+  slug:p.get('slug')||previous.slug||'',
+  capture_method:p.get('capture_method')||previous.capture_method||'',
+  receipt_url:p.get('receipt_url')||previous.receipt_url||'',
+  saved_at:Date.now()
+ };
+ if(returned.order_nsu||returned.transaction_nsu||returned.slug||returned.capture_method||returned.receipt_url){
+  localStorage.setItem(INFINITEPAY_RETURN_KEY,JSON.stringify(returned));
+  window.infinitePayReturnParams=returned;
+ }
+ return returned;
+}
+const initialInfinitePayReturn=saveInfinitePayReturnParams();
 function showToast(message){const t=el('toast');t.textContent=message;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2800)}
 function cartTotal(){return cart.reduce((s,x)=>s+x.price*x.qty,0)}function grandTotal(){return cartTotal()}
 function addToCart(name,price){const found=cart.find(x=>x.name===name);if(found)found.qty++;else cart.push({name,price,qty:1});renderCart();showToast('Item adicionado à sacola!')}
@@ -748,7 +768,10 @@ async function verifyInfinitePayReturn(attempts=10){
  const params=new URLSearchParams(window.location.search);
  const pending=(()=>{try{return JSON.parse(localStorage.getItem('pedido_pendente')||'null')}catch{return null}})();
  const savedCart=(()=>{try{return JSON.parse(localStorage.getItem('afrodite_cart_pending')||'[]')}catch{return []}})();
- const order_nsu=params.get('pedido_id')||params.get('order_nsu')||params.get('id')||pending?.order_nsu||localStorage.getItem('afrodite_infinitepay_order_nsu'),transaction_nsu=params.get('transaction_nsu'),slug=params.get('slug'),capture_method=params.get('capture_method');
+ const savedReturn=(()=>{try{return JSON.parse(localStorage.getItem(INFINITEPAY_RETURN_KEY)||'{}')}catch{return {}}})();
+ const order_nsu=params.get('pedido_id')||params.get('order_nsu')||params.get('id')||savedReturn.order_nsu||savedReturn.pedido_id||pending?.order_nsu||localStorage.getItem('afrodite_infinitepay_order_nsu'),transaction_nsu=params.get('transaction_nsu')||savedReturn.transaction_nsu,slug=params.get('slug')||savedReturn.slug,capture_method=params.get('capture_method')||savedReturn.capture_method,receipt_url=params.get('receipt_url')||savedReturn.receipt_url;
+ const returned={order_nsu,pedido_id:order_nsu,transaction_nsu,slug,capture_method,receipt_url,saved_at:Date.now()};
+ if(order_nsu||transaction_nsu||slug||capture_method||receipt_url){localStorage.setItem(INFINITEPAY_RETURN_KEY,JSON.stringify(returned));window.infinitePayReturnParams=returned;}
  if(!cart.length&&Array.isArray(pending?.items)&&pending.items.length)cart=pending.items.map(x=>({...x}));
  if(!cart.length&&Array.isArray(savedCart)&&savedCart.length)cart=savedCart.map(x=>({...x}));
  if(pending?.server&&el('cartServer'))el('cartServer').value=pending.server;
@@ -759,7 +782,7 @@ async function verifyInfinitePayReturn(attempts=10){
  for(let attempt=1;attempt<=attempts;attempt++){
   if(button)button.textContent=attempt===1?'Conferindo pagamento...':'Aguardando confirmação ('+attempt+'/'+attempts+')';
   try{
-   const response=await fetch('/api/infinitepay/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order_nsu,transaction_nsu,slug})});
+   const response=await fetch('/api/infinitepay/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:'amanda-roberta-wt8',order_nsu,transaction_nsu,slug,capture_method,receipt_url})});
    const data=await response.json().catch(()=>({}));
    if(!cart.length&&Array.isArray(data.items)&&data.items.length){cart=data.items.map(item=>({name:item.name,price:Number(item.price_centavos)/100,qty:Number(item.quantity)}));if(data.server&&el('cartServer'))el('cartServer').value=data.server;renderCart();el('pixTotalValue').textContent=money(grandTotal());}
    if(response.ok&&data.paid===true){
