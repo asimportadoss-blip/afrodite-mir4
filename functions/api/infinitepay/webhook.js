@@ -53,7 +53,7 @@ export async function onRequest({request,env}) {
     const raw=await response.text();
     let result=null;try{result=raw?JSON.parse(raw):null}catch{result={raw_response:raw};}
     console.log("InfinitePay webhook payment_check diagnóstico",{http_status:response.status,sent,response:result});
-    if(!response.ok||result?.success!==true||result?.paid!==true) {
+    if(!response.ok||result?.success===false||result?.paid!==true) {
       return json({success:true,received:true,confirmed:false,awaiting_validation:true,diagnostic:{enviado:sent,resposta_http:response.status,resposta:result}});
     }
     const method=result.capture_method;
