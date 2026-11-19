@@ -829,7 +829,7 @@ async function verifyInfinitePayReturn(attempts=10){
    }
    lastMessage=data.error||'A InfinitePay ainda não confirmou o pagamento.';
    if(response.status>=400&&response.status!==409&&response.status!==404)lastMessage=data.error||'Não foi possível consultar a confirmação agora.';
-   if(data.enviado||data.infinitepay_resposta||data.diagnostic)lastMessage+='\n\nDiagnóstico enviado/recebido:\n'+JSON.stringify({enviado:data.enviado||data.diagnostic?.enviado,resposta_http:data.diagnostic?.resposta_http,infinitepay_resposta:data.infinitepay_resposta||data.diagnostic?.resposta},null,2);
+   if(data.paid!==true)lastMessage="Pagamento ainda não identificado. Se você acabou de pagar o Pix, aguarde alguns segundos e clique em 'Consultar Pagamento Novamente'.";
   }catch(error){lastMessage=error.message||'Falha temporária ao consultar o pagamento.'}
   if(attempt<attempts)await new Promise(resolve=>setTimeout(resolve,2000));
  }
