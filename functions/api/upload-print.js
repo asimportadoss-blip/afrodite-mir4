@@ -38,6 +38,8 @@ export async function onRequest({request,env}){
   try{
    const bucketResponse=await fetch(base+"/storage/v1/bucket",{method:"POST",headers,body:JSON.stringify({id:bucket,name:bucket,public:true,file_size_limit:2097152,allowed_mime_types:["image/jpeg","image/png","image/webp","image/gif"]})});
    if(!bucketResponse.ok&&bucketResponse.status!==409)console.warn("Storage bucket setup failed",{status:bucketResponse.status,details:(await bucketResponse.text()).slice(0,200)});
+   const bucketUpdate=await fetch(base+"/storage/v1/bucket/"+bucket,{method:"PUT",headers,body:JSON.stringify({public:true,file_size_limit:2097152,allowed_mime_types:["image/jpeg","image/png","image/webp","image/gif"]})});
+   if(!bucketUpdate.ok)console.warn("Storage bucket public setting could not be confirmed",{status:bucketUpdate.status,details:(await bucketUpdate.text()).slice(0,200)});
    const ext={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"}[mime];
    const objectPath=encodeURIComponent(atendimentoId)+"/"+crypto.randomUUID()+"."+ext;
    const uploaded=await fetch(base+"/storage/v1/object/"+bucket+"/"+objectPath,{method:"POST",headers:{apikey:env.SUPABASE_SERVICE_ROLE_KEY,Authorization:"Bearer "+env.SUPABASE_SERVICE_ROLE_KEY,"Content-Type":mime,"x-upsert":"false"},body:bytes});
