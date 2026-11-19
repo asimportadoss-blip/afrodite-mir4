@@ -15,21 +15,22 @@ export async function onRequest({request,env}) {
     const transaction=String(body.transaction_nsu||"");
     const slug=String(body.slug||"");
     if(!/^AFR-[0-9a-f-]{36}$/i.test(order) || !transaction || !slug) return json({paid:false,pending:true});
-    const rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens&order_nsu=eq."+encodeURIComponent(order));
+    const rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&order_nsu=eq."+encodeURIComponent(order));
     if(!rows?.length) return json({error:"Pedido não encontrado."},404);
-    if(rows[0].status==="pago") return json({paid:true,server:rows[0].itens?.server,items:rows[0].itens?.items||[],installments:rows[0].itens?.installments||null,amount:rows[0].total_centavos,paid_amount:rows[0].itens?.paid_amount||rows[0].total_centavos});
+    if(rows[0].status==="pago") return json({paid:true,server:rows[0].itens?.server,items:rows[0].itens?.items||[],capture_method:rows[0].itens?.capture_method||null,installments:rows[0].itens?.installments||null,amount:rows[0].total_centavos,paid_amount:rows[0].itens?.paid_amount||rows[0].total_centavos});
     const response=await fetch("https://api.checkout.infinitepay.io/payment_check",{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({handle:HANDLE,order_nsu:order,transaction_nsu:transaction,slug})
     });
     const result=await response.json().catch(()=>null);
     if(!response.ok || result?.success!==true || result?.paid!==true) return json({paid:false,pending:true});
-    const installments=Number(result.installments);
-    if(Number(result.amount)!==Number(rows[0].total_centavos) || result.capture_method!=="credit_card" || !Number.isInteger(installments) || installments<1 || installments>12) return json({paid:false,pending:true,error:"O pagamento ainda não pôde ser validado. Confira se foi realizado no crédito em até 12 parcelas."},409);
+    const method=result.capture_method;
+    const installments=method==="credit_card"?Number(result.installments):null;
+    if(Number(result.amount)!==Number(rows[0].total_centavos) || !["credit_card","pix"].includes(method) || (method==="credit_card" && (!Number.isInteger(installments) || installments<1 || installments>12))) return json({paid:false,pending:true,error:"O pagamento ainda não pôde ser validado. Confira o método e o valor do pagamento."},409);
     await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(order),{
-      method:"PATCH",body:JSON.stringify({status:"pago",transaction_nsu:transaction,invoice_slug:slug,confirmado_em:new Date().toISOString(),itens:{...rows[0].itens,installments,paid_amount:Number(result.paid_amount||result.amount)}})
+      method:"PATCH",body:JSON.stringify({status:"pago",transaction_nsu:transaction,invoice_slug:slug,confirmado_em:new Date().toISOString(),itens:{...rows[0].itens,capture_method:method,installments,paid_amount:Number(result.paid_amount||result.amount)}})
     });
-    return json({paid:true,server:rows[0].itens?.server,items:rows[0].itens?.items||[],installments,amount:Number(result.amount),paid_amount:Number(result.paid_amount||result.amount)});
+    return json({paid:true,server:rows[0].itens?.server,items:rows[0].itens?.items||[],capture_method:method,installments,amount:Number(result.amount),paid_amount:Number(result.paid_amount||result.amount)});
   } catch(error) {
     return json({error:"Não foi possível confirmar o pagamento agora. Atualize a página em instantes."},500);
   }
