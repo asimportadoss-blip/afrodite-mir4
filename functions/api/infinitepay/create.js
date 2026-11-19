@@ -31,7 +31,11 @@ export async function onRequest({request, env}) {
   try {
     if (!env.INFINITEPAY_API_KEY) return json({error:"A integração de cartão ainda não está configurada."},503);
     const body = await request.json();
+    const atendimento_id = String(body.atendimento_id || "").trim();
+    if (!/^AFR-[0-9a-f-]{36}$/i.test(atendimento_id)) return json({error:"Não foi possível vincular o pagamento ao seu atendimento. Atualize a página e tente novamente."},400);
     if (!Array.isArray(body.items) || !body.items.length || !["SA1","NA1","INMENA1"].includes(body.server)) return json({error:"Pedido inválido."},400);
+    const attendance = await supabase(env,"atendimentos?select=id&id=eq."+encodeURIComponent(atendimento_id));
+    if (!attendance.length) return json({error:"Atendimento não encontrado. Atualize a página e tente novamente."},404);
     const items = [];
     let total = 0;
     for (const item of body.items) {
@@ -45,7 +49,7 @@ export async function onRequest({request, env}) {
     if (!Number.isSafeInteger(total) || total < 1 || total > 10000000) return json({error:"Valor do pedido inválido."},400);
     const order_nsu = "AFR-" + crypto.randomUUID();
     const origin = new URL(request.url).origin;
-    row = {order_nsu,total_centavos:total,itens:{server:body.server,atendimento_id:body.atendimento_id||null,items:items.map(x=>({name:x.name,quantity:x.quantity,price_centavos:x.price}))},status:"pendente"};
+    row = {order_nsu,total_centavos:total,itens:{server:body.server,atendimento_id,items:items.map(x=>({name:x.name,quantity:x.quantity,price_centavos:x.price}))},status:"pendente"};
     await supabase(env,"pagamentos_infinitepay",{method:"POST",body:JSON.stringify(row)});
     const payload = {
       handle: HANDLE,
