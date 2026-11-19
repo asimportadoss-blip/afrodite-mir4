@@ -726,11 +726,6 @@ function showPage(page){closeCart();closeCheckout();document.body.classList.togg
 function startCheckout(){if(!cart.length){showToast('Adicione um pacote antes de finalizar.');return}if(!el('cartServer').value){showToast('Selecione seu servidor para continuar.');return}paymentConfirmed=false;paymentMethod='pix';cardPaymentDetails=null;el('checkout').classList.add('checkout-open');el('cartPage').style.display='none';document.body.classList.add('subpage-active');goStep(1);setPaymentMethod('pix');window.scrollTo({top:0,behavior:'smooth'})}
 function setPaymentMethod(method){
  paymentMethod=method==='card'?'card':'pix';
- el('pixPanel').hidden=paymentMethod!=='pix';
- el('cardPanel').hidden=paymentMethod!=='card';
- el('methodPix').classList.toggle('gold-btn',paymentMethod==='pix');
- el('methodCard').classList.toggle('gold-btn',paymentMethod==='card');
- el('cardTotalValue').textContent=money(grandTotal());
  el('stepTab1').innerHTML='<b>01</b>Pagamento';
 }
 async function startInfinitePayCheckout(){
