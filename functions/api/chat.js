@@ -93,13 +93,11 @@ export async function onRequest(context){
     const tipo=body.order_complete===true?"novo_pedido":"mensagem";
     let shouldNotifyTelegram=true;
     if(tipo==="mensagem"){
-     const throttleKey="telegram_chat_alert:"+atendimentoId;
      try{
-      const previous=Number(await env.AFRODITE_KV?.get(throttleKey)||0);
-      if(Date.now()-previous<120000)shouldNotifyTelegram=false;
-      else if(env.AFRODITE_KV)await env.AFRODITE_KV.put(throttleKey,String(Date.now()),{expirationTtl:300});
-      else {console.warn("AFRODITE_KV missing: chat Telegram throttle unavailable");shouldNotifyTelegram=false;}
-     }catch(error){console.error("Telegram throttle failed",{message:error?.message||"unknown"});shouldNotifyTelegram=false;}
+      const recent=await db(env,"mensagens?select=criado_em&atendimento_id=eq."+encodeURIComponent(atendimentoId)+"&remetente=eq.cliente&order=criado_em.desc&limit=2");
+      const previous=recent?.[1]?.criado_em?Date.parse(recent[1].criado_em):0;
+      if(previous&&Date.now()-previous<120000)shouldNotifyTelegram=false;
+     }catch(error){console.error("Telegram chat throttle lookup failed",{message:error?.message||"unknown"});shouldNotifyTelegram=false;}
     }
     if(shouldNotifyTelegram)await sendTelegramAlert(env,{tipo,pedido_id:body.order_id||atendimentoId,cliente_nome:body.cliente_nome||"Cliente Afrodite",servidor:body.servidor||"",pacote:body.pacote||"",valor_total:body.valor_total?Number(body.valor_total).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"",mensagem:text},context);
    }
