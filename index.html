@@ -742,7 +742,7 @@ async function startInfinitePayCheckout(){
 async function verifyInfinitePayReturn(attempts=10){
  const params=new URLSearchParams(window.location.search);
  const order_nsu=params.get('order_nsu'),transaction_nsu=params.get('transaction_nsu'),slug=params.get('slug'),capture_method=params.get('capture_method');
- if(!['credit_card','pix'].includes(capture_method)||!order_nsu||!transaction_nsu||!slug)throw new Error('Não recebemos todos os dados para confirmar o pagamento. Entre em contato com o atendimento.');
+ if(!order_nsu)throw new Error('Não recebemos o identificador do pedido no retorno da InfinitePay. Entre em contato com o atendimento.');
  const button=el('cardPayButton');
  let lastMessage='A InfinitePay ainda está processando a confirmação.';
  for(let attempt=1;attempt<=attempts;attempt++){
