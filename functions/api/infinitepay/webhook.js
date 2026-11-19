@@ -29,6 +29,15 @@ export async function onRequest({request,env}) {
       await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(order),{method:"PATCH",body:JSON.stringify(saved)});
     }
     if(rows[0].status==="pago") {
+      const details=rows[0].itens||{};
+      if(details.atendimento_id){
+        const current=await db(env,"atendimentos?select=id,status_pedido&id=eq."+encodeURIComponent(details.atendimento_id));
+        if(current.length){
+          const fields={servidor:details.server,pacote:(details.items||[]).map(x=>String(x.name)+" x "+Number(x.quantity)).join(", "),valor_total:Number(details.paid_amount||rows[0].total_centavos)/100,atualizado_em:new Date().toISOString()};
+          if(!["pago","em_andamento","entregue"].includes(String(current[0].status_pedido||"")))fields.status_pedido="pago";
+          await db(env,"atendimentos?id=eq."+encodeURIComponent(details.atendimento_id),{method:"PATCH",body:JSON.stringify(fields)});
+        }
+      }
       return json({success:true,already_paid:true});
     }
     const finalTransaction=transaction||rows[0].transaction_nsu||"";
