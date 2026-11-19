@@ -742,6 +742,13 @@ function saveInfinitePayReturnParams(){
  }:{...previous};
  if(hasCurrentParams){
   localStorage.setItem(INFINITEPAY_RETURN_KEY,JSON.stringify(returned));
+  if(returned.order_nsu){
+   localStorage.setItem('afrodite_infinitepay_order_nsu',returned.order_nsu);
+   const pending=(()=>{try{return JSON.parse(localStorage.getItem('pedido_pendente')||'{}')}catch{return {}}})();
+   localStorage.setItem('pedido_pendente',JSON.stringify({...pending,order_nsu:returned.order_nsu,pedido_id:returned.order_nsu}));
+  }
+  localStorage.setItem('afrodite_infinitepay_transaction_nsu',returned.transaction_nsu||'');
+  localStorage.setItem('afrodite_infinitepay_slug',returned.slug||'');
   window.infinitePayReturnParams=returned;
  }
  return returned;
