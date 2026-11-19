@@ -733,6 +733,7 @@ async function startInfinitePayCheckout(){
  if(!cart.length){showToast('Sua sacola está vazia.');return}
  const button=el('cardPayButton');button.disabled=true;button.textContent='Preparando pagamento...';
  try{
+  if(!chatSession)await loadCustomerChat();
   const response=await fetch('/api/infinitepay/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({server:el('cartServer').value,atendimento_id:chatSession?.id||null,items:cart.map(x=>({name:x.name,qty:x.qty}))})});
   const data=await response.json().catch(()=>({}));
   if(!response.ok||!data.url)throw new Error(data.error||'Não foi possível iniciar o pagamento.');
