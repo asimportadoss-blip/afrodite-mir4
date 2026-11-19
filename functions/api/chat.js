@@ -180,7 +180,7 @@ export async function onRequest(context){
    try{
     await db(env,"atendimentos?id=eq."+encodeURIComponent(atendimentoId),{method:"PATCH",body:JSON.stringify(patch)});
     const messageRows=referente==="cliente"&&body.order_complete===true
-     ? [{atendimento_id:atendimentoId,remetente:referente,texto},{atendimento_id:atendimentoId,remetente:referente,texto:"PRINT_URL:"+patch.print_url,criado_em:new Date(Date.now()+1).toISOString()}]
+     ? [{atendimento_id:atendimentoId,remetente:referente,texto:text},{atendimento_id:atendimentoId,remetente:referente,texto:"PRINT_URL:"+patch.print_url,criado_em:new Date(Date.now()+1).toISOString()}]
      : {atendimento_id:atendimentoId,remetente:referente,texto};
     inserted=await db(env,"mensagens",{method:"POST",body:JSON.stringify(messageRows)});
    }catch(error){
