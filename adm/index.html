@@ -911,7 +911,7 @@ function renderCustomerOrderStatus(order){
  const labels={chat_ativo:"Atendimento iniciado",pendente:"Pedido recebido — aguardando confirmação",pago:"Pagamento confirmado — aguardando conferência do anúncio",em_andamento:"Pedido em andamento — nossa equipe está preparando a entrega",entregue:"Pedido entregue — compra concluída"};
  const title=labels[status]||"Atendimento em andamento";
  box.hidden=!order||!["chat_ativo","pendente","pago","em_andamento","entregue"].includes(status);
- box.innerHTML="<strong>Situação do pedido:</strong> "+escapeHtml(title)+(order?.id?"<br><span>Pedido: "+escapeHtml(order.id)+"</span>":"");
+ box.innerHTML="<strong>Situação do pedido:</strong> "+escapeHtml(title);
 }
 async function loadCustomerChat(){if(chatLoading)return;chatLoading=true;try{const data=await chatApi("/api/chat");chatSession=data.atendimento;renderCustomerOrderStatus(chatSession);renderBubbles(el("chatMessages"),(data.mensagens||[]).map(m=>({from:m.referente==="cliente"?"buyer":"seller",text:m.texto,time:m.criado_em})));}catch(e){el("chatMessages").textContent=e.message; }finally{chatLoading=false}}
 function openChat(prefill=''){el('chat').classList.add('open');if(prefill){el('chatInput').value=prefill;el('chatInput').focus()}loadCustomerChat();if(!chatPollStarted){chatPollStarted=true;setInterval(()=>{if(el('chat').classList.contains('open'))loadCustomerChat();if(admAuthenticated)refreshAdminChats()},4000)}}
