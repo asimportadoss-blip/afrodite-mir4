@@ -790,6 +790,8 @@ async function startInfinitePayCheckout(){
   const canonicalOrderNsu=String(data.order_nsu||'').trim();if(!canonicalOrderNsu)throw new Error('A InfinitePay não retornou o identificador do pedido.');localStorage.setItem('pedido_pendente',JSON.stringify({order_nsu:canonicalOrderNsu,pedido_id:canonicalOrderNsu,atendimento_id:chatSession?.id||null,server:el('cartServer').value,items:cart.map(x=>({...x})),total:cartTotal(),saved_at:Date.now()}));
   localStorage.setItem('afrodite_cart_pending',JSON.stringify(cart));
   localStorage.setItem('afrodite_infinitepay_order_nsu',canonicalOrderNsu);
+  localStorage.setItem('afrodite_infinitepay_transaction_nsu','');
+  localStorage.setItem('afrodite_infinitepay_slug','');
   window.location.assign(data.url);
  }catch(error){showToast(error.message||'Falha ao iniciar o pagamento.');button.disabled=false;button.textContent='CONTINUAR PARA PAGAMENTO SEGURO'}
 }
@@ -848,6 +850,11 @@ function startInfinitePayStatusPolling(){
  if(infinitePayPollTimer)clearInterval(infinitePayPollTimer);
  infinitePayPollTimer=setInterval(async()=>{
   if(currentStep!==1||paymentConfirmed||infinitePayPollBusy)return;
+  const query=new URLSearchParams(window.location.search);
+  const saved=(()=>{try{return JSON.parse(localStorage.getItem(INFINITEPAY_RETURN_KEY)||'{}')}catch{return {}}})();
+  const order=String(query.get('order_nsu')||query.get('pedido_id')||saved.order_nsu||localStorage.getItem('afrodite_infinitepay_order_nsu')||'').trim();
+  const transaction=String(query.get('transaction_nsu')||query.get('transaction_id')||saved.transaction_nsu||saved.transaction_id||localStorage.getItem('afrodite_infinitepay_transaction_nsu')||'').trim();
+  if(!order||!transaction)return;
   infinitePayPollBusy=true;
   try{await verifyInfinitePayReturn(1)}catch(error){if(el('cardPaymentStatus')&&!error.message.includes('pedido pendente'))el('cardPaymentStatus').textContent=error.message}
   finally{infinitePayPollBusy=false}
