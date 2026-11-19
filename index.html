@@ -927,7 +927,8 @@ async function submitOrder(){
  const paymentSlug=returnInfo.slug||localStorage.getItem('afrodite_infinitepay_slug')||'';
  const order={id:orderId,date:Date.now(),items,subtotal,total,server,proof:selectedFile,marketStatus:market.value,paymentStatus:'Pagamento aprovado automaticamente via InfinitePay.'};
  const packages=items.map(x=>x.name+' x '+x.qty).join(', ');
- const summary='NOVO PEDIDO AFRODITE MIR4\nPedido: '+order.id+'\nPacote comprado: '+packages+'\nValor total: '+money(total)+'\nServidor: '+server+'\nStatus do item no mercado: '+market.value+'\nPrint anexado no Painel Atendente.\nPagamento aprovado automaticamente via InfinitePay.';
+ const summary='NOVO PEDIDO AFRODITE MIR4\nPedido: '+order.id+'\nPacote comprado: '+packages+'\nValor total: '+money(total)+'\nServidor: '+server+'\nStatus do item no mercado: '+market.value+'\nPrint: aguardando upload no Supabase Storage.\nPagamento aprovado automaticamente via InfinitePay.';
+ const texto=summary;
  const submitButton=document.querySelector('#pane2 button[type="submit"],#pane2 .gold-btn');
  if(submitButton){submitButton.disabled=true;submitButton.textContent='ENVIANDO PEDIDO...'}
  try{
@@ -938,7 +939,7 @@ async function submitOrder(){
   const printUrl=uploadResult.url;
   await chatApi('/api/chat',{method:'POST',body:JSON.stringify({order_complete:true,atendimento_id:atendimentoId,order_id:order.id,order_nsu:order.id,transaction_nsu:transactionNsu,slug:paymentSlug,cliente_nome:chatSession?.cliente_nome||chatSession?.nome_do_cliente||'Cliente Afrodite',servidor:server,pacote:packages,valor_total:total,status_item_mercado:market.value,print_url:printUrl,text:summary})});
   // O alerta do pedido é disparado explicitamente no clique de ENVIAR PEDIDO.
-  const telegramResponse=await fetch('/api/notificar-telegram',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo:'novo_pedido',pedido_id:order.id,cliente_nome:chatSession?.cliente_nome||chatSession?.nome_do_cliente||'Cliente Afrodite',servidor:server,pacote:packages,valor_total:money(total),mensagem:summary})});
+  const telegramResponse=await fetch('/api/notificar-telegram',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({tipo:'novo_pedido',pedido_id:order.id,cliente_nome:chatSession?.cliente_nome||chatSession?.nome_do_cliente||'Cliente Afrodite',servidor:server,pacote:packages,valor_total:money(total),mensagem:texto,print_url:printUrl})});
   if(!telegramResponse.ok)console.error('Não foi possível solicitar o alerta do Telegram.');
   if(uploadResult.storage==="base64_fallback")showToast("Print preservado no atendimento. O Storage não aceitou o upload.");
   const all=getOrders();all.unshift(order);saveOrders(all);
