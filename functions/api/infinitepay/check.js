@@ -7,6 +7,16 @@ async function db(env,path,options={}){
  if(!response.ok)throw new Error("Supabase HTTP "+response.status+": "+String(raw).slice(0,400));
  return data;
 }
+async function syncAttendance(env,details,status){
+ if(!details?.atendimento_id)return;
+ const id=String(details.atendimento_id);
+ const current=await db(env,"atendimentos?select=id,status_pedido&id=eq."+encodeURIComponent(id));
+ if(!current.length)return;
+ const fields={servidor:details.server,pacote:(details.items||[]).map(item=>String(item.name)+" x "+Number(item.quantity)).join(", "),valor_total:Number(details.paid_amount||0)/100,atualizado_em:new Date().toISOString()};
+ const currentStatus=String(current[0].status_pedido||"");
+ if(status==="pago"&&!["pago","em_andamento","entregue"].includes(currentStatus))fields.status_pedido="pago";
+ await db(env,"atendimentos?id=eq."+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify(fields)});
+}
 function paymentResponse(row){
  const details=row.itens||{};
  return {paid:true,order_nsu:row.order_nsu,status_pedido:"pago",amount:Number(row.total_centavos),paid_amount:Number(details.paid_amount||row.total_centavos),capture_method:details.capture_method||null,installments:details.installments||null,server:details.server||null,items:details.items||[]};
@@ -20,7 +30,7 @@ export async function onRequest({request,env}){
   const rows=await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&order_nsu=eq."+encodeURIComponent(orderNsu));
   if(!rows?.length)return json({error:"Pedido não encontrado."},404);
   const row=rows[0];
-  if(row.status==="pago")return json(paymentResponse(row));
+  if(row.status==="pago"){await syncAttendance(env,row.itens,"pago");return json(paymentResponse(row));}
   if(row.status!=="pendente")return json({paid:false,pending:false,error:"Este pedido não está disponível para confirmação."},409);
   const transactionNsu=String(body.transaction_nsu||body.transaction_id||body.transactionId||"").trim();
   const slug=String(body.slug||"").trim();
@@ -42,10 +52,7 @@ export async function onRequest({request,env}){
   const details={...(row.itens||{}),capture_method:method,installments,paid_amount:paidAmount};
   const patch={status:"pago",transaction_nsu:transactionNsu||row.transaction_nsu||null,invoice_slug:slug||row.invoice_slug||null,confirmado_em:new Date().toISOString(),itens:details};
   await db(env,"pagamentos_infinitepay?order_nsu=eq."+encodeURIComponent(orderNsu),{method:"PATCH",body:JSON.stringify(patch)});
-  if(details.atendimento_id){
-   const packages=(details.items||[]).map(item=>String(item.name)+" x "+Number(item.quantity)).join(", ");
-   await db(env,"atendimentos?id=eq."+encodeURIComponent(details.atendimento_id),{method:"PATCH",body:JSON.stringify({status_pedido:"pago",servidor:details.server,pacote:packages,valor_total:paidAmount/100,atualizado_em:new Date().toISOString()})});
-  }
+  await syncAttendance(env,details,"pago");
   return json(paymentResponse({...row,status:"pago",itens:details}));
  }catch(error){
   console.error("InfinitePay check error",{message:error?.message||"unknown"});
