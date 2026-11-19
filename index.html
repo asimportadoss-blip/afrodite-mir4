@@ -808,7 +808,7 @@ async function verifyInfinitePayReturn(attempts=10){
    const response=await fetch('/api/infinitepay/check',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({handle:'amanda-roberta-wt8',order_nsu,transaction_nsu,slug,capture_method,receipt_url})});
    const data=await response.json().catch(()=>({}));
    if(!cart.length&&Array.isArray(data.items)&&data.items.length){cart=data.items.map(item=>({name:item.name,price:Number(item.price_centavos)/100,qty:Number(item.quantity)}));if(data.server&&el('cartServer'))el('cartServer').value=data.server;renderCart();el('pixTotalValue').textContent=money(grandTotal());}
-   if(response.ok&&data.paid===true){
+   if(data.paid===true||data.success===true||data.status==='pago'||data.status_pedido==='pago'){
     if(infinitePayPollTimer){clearInterval(infinitePayPollTimer);infinitePayPollTimer=null;}
     const pendingOrder=(()=>{try{return JSON.parse(localStorage.getItem('pedido_pendente')||'null')}catch{return null}})();
     const storedCart=(()=>{try{return JSON.parse(localStorage.getItem('afrodite_cart_pending')||'[]')}catch{return []}})();
@@ -829,7 +829,7 @@ async function verifyInfinitePayReturn(attempts=10){
    }
    lastMessage=data.error||'A InfinitePay ainda não confirmou o pagamento.';
    if(response.status>=400&&response.status!==409&&response.status!==404)lastMessage=data.error||'Não foi possível consultar a confirmação agora.';
-   if(data.diagnostic)lastMessage+='\n\nDiagnóstico enviado/recebido:\n'+JSON.stringify({enviado:data.diagnostic.enviado,resposta_http:data.diagnostic.resposta_http,resposta:data.diagnostic.resposta},null,2);
+   if(data.enviado||data.infinitepay_resposta||data.diagnostic)lastMessage+='\n\nDiagnóstico enviado/recebido:\n'+JSON.stringify({enviado:data.enviado||data.diagnostic?.enviado,resposta_http:data.diagnostic?.resposta_http,infinitepay_resposta:data.infinitepay_resposta||data.diagnostic?.resposta},null,2);
   }catch(error){lastMessage=error.message||'Falha temporária ao consultar o pagamento.'}
   if(attempt<attempts)await new Promise(resolve=>setTimeout(resolve,2000));
  }
