@@ -26,7 +26,7 @@ export async function onRequest({request,env}){
  try{
   const body=await request.json();
   const orderNsu=String(body.order_nsu||body.pedido_id||body.pedidoId||body.id||"").trim();
-  const transactionNsu=String(body.transaction_nsu||body.transaction_id||body.transactionId||"").trim();
+  let transactionNsu=String(body.transaction_nsu||body.transaction_id||body.transactionId||"").trim();
   if(!orderNsu&&!transactionNsu)return json({error:"Informe o identificador do pedido ou da transação para consultar o pagamento."},400);
   let rows=orderNsu
    ? await db(env,"pagamentos_infinitepay?select=order_nsu,total_centavos,status,itens,transaction_nsu,invoice_slug&order_nsu=eq."+encodeURIComponent(orderNsu))
@@ -40,7 +40,7 @@ export async function onRequest({request,env}){
   if(!canonicalOrderNsu)return json({error:"O pedido encontrado não possui identificador de cobrança."},409);
   if(row.status==="pago"){await syncAttendance(env,row.itens,"pago");return json(paymentResponse(row));}
   if(row.status!=="pendente")return json({paid:false,pending:false,error:"Este pedido não está disponível para confirmação."},409);
-  const transactionNsu=String(body.transaction_nsu||body.transaction_id||body.transactionId||row.transaction_nsu||"").trim();
+  transactionNsu=transactionNsu||String(row.transaction_nsu||"").trim();
   const slug=String(body.slug||"").trim();
   const handle=String(body.handle||env.INFINITEPAY_HANDLE||DEFAULT_HANDLE).replace(/^\$/,"").trim();
   const sent={handle,order_nsu:canonicalOrderNsu,transaction_nsu:transactionNsu||undefined,slug:slug||undefined};
