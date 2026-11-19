@@ -19,7 +19,7 @@ async function syncAttendance(env,details,status){
 }
 function paymentResponse(row){
  const details=row.itens||{};
- return {paid:true,order_nsu:row.order_nsu,status_pedido:"pago",amount:Number(row.total_centavos),paid_amount:Number(details.paid_amount||row.total_centavos),capture_method:details.capture_method||null,installments:details.installments||null,server:details.server||null,items:details.items||[]};
+ return {paid:true,success:true,ok:true,status:"pago",status_pedido:"pago",order_nsu:row.order_nsu,amount:Number(row.total_centavos),paid_amount:Number(details.paid_amount||row.total_centavos),capture_method:details.capture_method||null,installments:details.installments||null,server:details.server||null,items:details.items||[]};
 }
 export async function onRequest({request,env}){
  if(request.method!=="POST")return json({error:"Método não permitido."},405);
@@ -43,12 +43,12 @@ export async function onRequest({request,env}){
   transactionNsu=transactionNsu||String(row.transaction_nsu||"").trim();
   const slug=String(body.slug||"").trim();
   const handle=String(body.handle||env.INFINITEPAY_HANDLE||DEFAULT_HANDLE).replace(/^\$/,"").trim();
-  const sent={handle,order_nsu:canonicalOrderNsu,transaction_nsu:transactionNsu||undefined,slug:slug||undefined};
+  const sent={handle,order_nsu:canonicalOrderNsu,transaction_nsu:transactionNsu||null,slug:slug||null};
   const response=await fetch("https://api.infinitepay.io/invoices/public/checkout/payment_check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(sent)});
   const raw=await response.text();let result;try{result=raw?JSON.parse(raw):null}catch{result={raw_response:raw};}
   console.log("InfinitePay payment_check",{http_status:response.status,success:result?.success??null,paid:result?.paid??null,has_order:true,has_transaction:!!transactionNsu,has_slug:!!slug});
   if(!response.ok||result?.success===false||result?.paid!==true){
-   return json({paid:false,pending:true,error:!response.ok?"A InfinitePay respondeu HTTP "+response.status+".":"A InfinitePay ainda não confirmou o pagamento.",diagnostic:{resposta_http:response.status}},response.ok?409:502);
+   return json({paid:false,success:false,ok:false,status:"pendente",status_pedido:"pendente",pending:true,order_nsu:canonicalOrderNsu,error:!response.ok?"A InfinitePay respondeu HTTP "+response.status+".":"A InfinitePay ainda não confirmou o pagamento.",enviado:sent,infinitepay_resposta:result,diagnostic:{resposta_http:response.status,enviado:sent,resposta:result}},response.ok?409:502);
   }
   const method=result.capture_method,installments=method==="credit_card"?Number(result.installments):null;
   if(Number(result.amount)!==Number(row.total_centavos)||!(method==="pix"||method==="credit_card")||(method==="credit_card"&&(!Number.isInteger(installments)||installments<1||installments>12))){
